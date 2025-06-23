@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #1976d2;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    select, input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    select:focus, input:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+    .btn {
+      background-color: #1976d2;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #1565c0;
+    }
+    .btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    .error {
+      color: #d32f2f;
+      background-color: #ffebee;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .success {
+      color: #2e7d32;
+      background-color: #e8f5e8;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .po-number {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Purchase Order</h2>
+    
+    <div id="loading" class="loading">Loading outlets and brands...</div>
+    
+    <div id="form" style="display: none;">
+      <div id="error" class="error" style="display: none;"></div>
+      <div id="success" class="success" style="display: none;"></div>
+      
+      <div class="form-group">
+        <label for="outlet">Outlet:</label>
+        <select id="outlet" onchange="onOutletChange()">
+          <option value="">Select an outlet...</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="brand">Brand:</label>
+        <select id="brand" disabled onchange="onBrandChange()">
+          <option value="">Select a brand...</option>
+        </select>
+      </div>
+      
+      <button id="createBtn" class="btn" onclick="createPOFromUIHandler()" disabled>
+        Create Purchase Order
+      </button>
+      
+      <div id="poNumber" class="po-number" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    let outletBrands = {};
+    
+    // Load data when page loads
+    window.onload = function() {
+      google.script.run
+        .withSuccessHandler(onDataLoaded)
+        .withFailureHandler(onError)
+        .getOutletAndBrandData();
+    };
+    
+    function onDataLoaded(data) {
+      if (data.error) {
+        document.getElementById('loading').innerHTML = '<div class="error">' + data.error + '</div>';
+        return;
+      }
+      
+      outletBrands = data.outletBrands;
+      
+      // Populate outlet dropdown
+      const outletSelect = document.getElementById('outlet');
+      data.outlets.forEach(outlet => {
+        const option = document.createElement('option');
+        option.value = outlet;
+        option.textContent = outlet;
+        outletSelect.appendChild(option);
+      });
+      
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('form').style.display = 'block';
+    }
+    
+    function onError(error) {
+      document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + error.message + '</div>';
+    }
+    
+    function onBrandChange() {
+      const outlet = document.getElementById('outlet').value;
+      const brand = document.getElementById('brand').value;
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = !(outlet && brand);
+    }
+    
+    function onOutletChange() {
+      const outletSelect = document.getElementById('outlet');
+      const brandSelect = document.getElementById('brand');
+      const createBtn = document.getElementById('createBtn');
+      const selectedOutlet = outletSelect.value;
+      // Clear brand dropdown
+      brandSelect.innerHTML = '<option value="">Select a brand...</option>';
+      brandSelect.disabled = true;
+      createBtn.disabled = true;
+      if (selectedOutlet && outletBrands[selectedOutlet]) {
+        outletBrands[selectedOutlet].forEach(brand => {
+          const option = document.createElement('option');
+          option.value = brand;
+          option.textContent = brand;
+          brandSelect.appendChild(option);
+        });
+        brandSelect.disabled = false;
+      }
+    }
+    
+    function createPOFromUIHandler() {
+      const outlet = document.getElementById('outlet').value;
+      const brand = document.getElementById('brand').value;
+      const createBtn = document.getElementById('createBtn');
+      const errorDiv = document.getElementById('error');
+      const successDiv = document.getElementById('success');
+      const poNumberDiv = document.getElementById('poNumber');
+      if (!outlet || !brand) {
+        showError('Please select both outlet and brand.');
+        return;
+      }
+      // Clear previous messages
+      errorDiv.style.display = 'none';
+      successDiv.style.display = 'none';
+      poNumberDiv.style.display = 'none';
+      // Disable button and show loading
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating PO...';
+      google.script.run
+        .withSuccessHandler(onPOCreated)
+        .withFailureHandler(onPOCreateError)
+        .createPOFromUI(outlet, brand);
+    }
+    
+    function onPOCreated(result) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Purchase Order';
+      
+      if (result.success) {
+        showSuccess(result.message);
+        document.getElementById('poNumber').innerHTML = 'PO Number: ' + result.poNumber;
+        document.getElementById('poNumber').style.display = 'block';
+        
+        // Reset form
+        document.getElementById('outlet').value = '';
+        document.getElementById('brand').innerHTML = '<option value="">Select a brand...</option>';
+        document.getElementById('brand').disabled = true;
+      } else {
+        showError(result.message);
+      }
+    }
+    
+    function onPOCreateError(error) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Purchase Order';
+      showError('Error creating PO: ' + error.message);
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+    
+    function showSuccess(message) {
+      const successDiv = document.getElementById('success');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html> 
