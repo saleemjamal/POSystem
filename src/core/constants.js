@@ -88,7 +88,7 @@ const PO_EMAIL_TEMPLATE = (distributor, brand, outlet) => `
   </div>
 `;
 
-const wantedColumns=[6,7,9]
+const wantedColumns=[7,8,10]
 
  const ccList = [
     'purchasemanager@poppatjamals.com',
