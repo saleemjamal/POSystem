@@ -26,6 +26,28 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
     // Get or create GRN sheet
     const grnSheet = getOrCreateGRNSheet(ss);
     
+    // Always use a full timestamp for GRNDate
+    let grnDateValue;
+    if (grnDate) {
+      // If grnDate is a string (from HTML input), parse as local date and add current time
+      if (typeof grnDate === 'string' && grnDate.length === 10) {
+        const parts = grnDate.split('-');
+        const now = new Date();
+        grnDateValue = new Date(
+          Number(parts[0]),
+          Number(parts[1]) - 1,
+          Number(parts[2]),
+          now.getHours(),
+          now.getMinutes(),
+          now.getSeconds()
+        );
+      } else {
+        grnDateValue = new Date(grnDate);
+      }
+    } else {
+      grnDateValue = new Date();
+    }
+    
     // Create GRN record
     const grnRecord = [
       grnNumber,
@@ -33,7 +55,7 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
       poData.outlet,
       poData.brand,
       invoiceNumber,
-      grnDate || new Date(),
+      grnDateValue, // Always a full timestamp
       Number(grnAmount),
       false, // Approved checkbox (will be formatted as checkbox by column validation)
       '', // ApprovalType (will be filled when approved)
@@ -42,6 +64,11 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
     ];
     
     grnSheet.appendRow(grnRecord);
+    // Ensure the Approved cell in the new row is a checkbox
+    const lastRow = grnSheet.getLastRow();
+    grnSheet.getRange(lastRow, 8).setDataValidation(
+      SpreadsheetApp.newDataValidation().requireCheckbox().build()
+    );
     
     // Update PO status if this is the first GRN
     updatePOStatusOnGRNCreation(poNumber, poData);
