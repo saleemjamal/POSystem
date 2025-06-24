@@ -35,7 +35,8 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
       invoiceNumber,
       grnDate || new Date(),
       Number(grnAmount),
-      false, // Approved checkbox
+      false, // Approved checkbox (will be formatted as checkbox by column validation)
+      '', // ApprovalType (will be filled when approved)
       '', // Date Approved (will be filled when approved)
       notes || ''
     ];
