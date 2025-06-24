@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4caf50;
+      margin-top: 0;
+      text-align: center;
+      border-bottom: 2px solid #e8f5e8;
+      padding-bottom: 15px;
+    }
+    h2 {
+      color: #4caf50;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-left: 4px solid #4caf50;
+      padding-left: 15px;
+    }
+    h3 {
+      color: #333;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    .emoji {
+      font-size: 1.2em;
+      margin-right: 8px;
+    }
+    .workflow-step {
+      background: #e8f5e8;
+      border-left: 4px solid #4caf50;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .tip {
+      background: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .important {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    .status-sent { color: #2196f3; font-weight: bold; }
+    .status-partial { color: #ff9800; font-weight: bold; }
+    .status-complete { color: #4caf50; font-weight: bold; }
+    .status-late { color: #f44336; font-weight: bold; }
+    .contact-info {
+      background: #f3e5f5;
+      border: 1px solid #9c27b0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .guidelines {
+      background: #e8f5e8;
+      border: 1px solid #4caf50;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span class="emoji">📥</span>Inventory Manager Help Guide</h1>
+    
+    <div class="tip">
+      <strong>Welcome!</strong> You're responsible for recording all goods that arrive at our stores. Your accurate recording keeps our entire supply chain visible and accountable!
+    </div>
+
+    <h2><span class="emoji">🎯</span>What You Can Do</h2>
+    <ul>
+      <li><strong>Record Goods Receipts</strong> when distributors deliver stock</li>
+      <li><strong>Track Partial Deliveries</strong> when orders come in multiple shipments</li>
+      <li><strong>Update Vendor Information</strong> to keep supplier details current</li>
+      <li><strong>Monitor Delivery Performance</strong> to see how well distributors are performing</li>
+    </ul>
+
+    <h2><span class="emoji">📦</span>When Goods Arrive - Your Daily Workflow</h2>
+    
+    <div class="workflow-step">
+      <h3>Step 1: Gather Information</h3>
+      <p>When goods arrive at any store, collect these details:</p>
+      <ul>
+        <li>📋 <strong>Purchase Order number</strong> (from the delivery paperwork)</li>
+        <li>🧾 <strong>Invoice number</strong> from distributor</li>
+        <li>💰 <strong>Amount received</strong> (from invoice)</li>
+        <li>📅 <strong>Date received</strong> (usually today)</li>
+      </ul>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 2: Record the Receipt</h3>
+      <ol>
+        <li>Click <strong>📥 Inventory → 📝 Record Goods Receipt</strong></li>
+        <li>Select the <strong>Purchase Order</strong> from dropdown</li>
+        <li>Enter the <strong>Invoice Number</strong></li>
+        <li>Enter the <strong>Amount Received</strong> (₹)</li>
+        <li>Date will auto-fill to today (change if needed)</li>
+        <li>Add any <strong>Notes</strong> if there were issues</li>
+        <li>Click <strong>Create GRN</strong></li>
+      </ol>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 3: Done!</h3>
+      <ul>
+        <li>✅ Your GRN is automatically approved after 60 minutes</li>
+        <li>✅ Purchase order status updates automatically</li>
+        <li>✅ Fulfillment tracking happens in real-time</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">📊</span>Understanding PO Status</h2>
+    <table>
+      <tr>
+        <th>Status</th>
+        <th>What It Means</th>
+        <th>Your Action</th>
+      </tr>
+      <tr>
+        <td class="status-sent">Sent</td>
+        <td>PO sent to distributor</td>
+        <td>✅ Ready for GRN when goods arrive</td>
+      </tr>
+      <tr>
+        <td class="status-partial">Partially Received</td>
+        <td>Some goods received</td>
+        <td>✅ Create more GRNs as more goods arrive</td>
+      </tr>
+      <tr>
+        <td class="status-complete">Closed - Complete</td>
+        <td>All goods received</td>
+        <td>✅ Nothing needed, well done!</td>
+      </tr>
+      <tr>
+        <td class="status-partial">Closed - Partial</td>
+        <td>Partially fulfilled, order closed</td>
+        <td>⚠️ Note: Not all goods came</td>
+      </tr>
+      <tr>
+        <td class="status-late">Late Fulfillment</td>
+        <td>Goods arrived after closure</td>
+        <td>✅ Still record GRN for tracking</td>
+      </tr>
+    </table>
+
+    <h2><span class="emoji">📝</span>Multiple Deliveries for Same PO</h2>
+    <div class="tip">
+      <p><strong>Same PO, multiple deliveries?</strong> No problem!</p>
+      <ul>
+        <li>Create separate GRNs for each delivery</li>
+        <li>System automatically calculates total fulfillment</li>
+        <li>No limit on number of GRNs per PO</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">❓</span>Frequently Asked Questions</h2>
+    
+    <h3>Q: What if I don't have the PO number?</h3>
+    <p>Check with the store manager or look at the delivery paperwork. Every delivery should have a PO number.</p>
+
+    <h3>Q: What if the amount doesn't match the PO?</h3>
+    <p>Record the actual amount received. The system tracks differences automatically - this helps us monitor distributor performance.</p>
+
+    <h3>Q: Can I edit a GRN after creating it?</h3>
+    <p>Contact system administrators (saleem@ or karima@) for corrections. It's better to be accurate the first time.</p>
+
+    <h3>Q: What if goods arrive damaged?</h3>
+    <p>Record the GRN for the amount actually usable, and add detailed notes about the damage for follow-up.</p>
+
+    <h3>Q: How long do I have to record a GRN?</h3>
+    <p>Record as soon as possible after delivery, but there's no strict deadline. Even late GRNs are tracked.</p>
+
+    <h3>Q: What if no goods arrive for a PO?</h3>
+    <p>Don't create a GRN. The system will automatically close the PO after 10 days and mark it as "No Receipt."</p>
+
+    <h2><span class="emoji">🏪</span>Our Store Locations</h2>
+    <ul>
+      <li><strong>POPPAT JAMALS ADYAR</strong></li>
+      <li><strong>POPPAT JAMAL & SONS MOUNT ROAD</strong></li>
+      <li><strong>POPPAT JAMALS ANNA NAGAR</strong></li>
+      <li><strong>POPPAT JAMALS COIMBATORE</strong></li>
+      <li><strong>POPPAT JAMALS VIJAYAWADA</strong></li>
+    </ul>
+
+    <h2><span class="emoji">🚨</span>Important Guidelines</h2>
+    <div class="guidelines">
+      <h3>Accuracy is Key:</h3>
+      <ul>
+        <li>✅ <strong>Double-check invoice numbers</strong> - These must match distributor records</li>
+        <li>✅ <strong>Verify amounts</strong> - Record exactly what was received</li>
+        <li>✅ <strong>Record promptly</strong> - Don't let GRNs pile up</li>
+      </ul>
+
+      <h3>Communication:</h3>
+      <ul>
+        <li>✅ <strong>Note any issues</strong> - Use the notes field for problems</li>
+        <li>✅ <strong>Report patterns</strong> - Tell managers about recurring delivery issues</li>
+        <li>✅ <strong>Coordinate with stores</strong> - Ensure they notify you of all deliveries</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">📈</span>Tracking & Monitoring</h2>
+    
+    <h3>GRNTracking Sheet</h3>
+    <ul>
+      <li>See all your recorded receipts</li>
+      <li>Check approval status (auto-approved after 60 minutes)</li>
+      <li>Monitor delivery patterns by distributor</li>
+    </ul>
+
+    <h3>POTracking Sheet</h3>
+    <ul>
+      <li>View fulfillment percentages for all orders</li>
+      <li>See which orders are still pending deliveries</li>
+      <li>Track distributor performance over time</li>
+    </ul>
+
+    <h2><span class="emoji">💡</span>Pro Tips</h2>
+    <div class="tip">
+      <ul>
+        <li><strong>Check daily</strong> - Look for new POs that might receive goods</li>
+        <li><strong>Use notes field</strong> - Record delivery quality, timing, or issues</li>
+        <li><strong>Monitor patterns</strong> - Notice which distributors are reliable</li>
+        <li><strong>Stay organized</strong> - Keep delivery paperwork until GRN is created</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">🔄</span>The Big Picture</h2>
+    <div class="workflow-step">
+      <h3>Your Critical Role in the Purchase Flow:</h3>
+      <ol>
+        <li>Purchase Manager creates POs</li>
+        <li>Admins approve and send to distributors</li>
+        <li><strong>YOU record what arrives</strong> ← Your critical role!</li>
+        <li>System tracks performance and closes orders</li>
+      </ol>
+
+      <h3>Your Impact:</h3>
+      <ul>
+        <li><strong>Inventory accuracy</strong> - We know what stock we have</li>
+        <li><strong>Supplier performance</strong> - Data drives better partnerships</li>
+        <li><strong>Financial control</strong> - Track what we paid vs. what we received</li>
+      </ul>
+    </div>
+
+    <div class="contact-info">
+      <h3><span class="emoji">🆘</span>Need Help?</h3>
+      <p><strong>For Technical Issues or System Access:</strong></p>
+      <p>📧 <strong>saleem@poppatjamals.com</strong> or <strong>karima@poppatjamals.com</strong></p>
+      <p>They can help with system problems, access issues, or training questions.</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+      <p><em>Remember: You're the final link in our purchasing process! Your accurate recording ensures we know what we have, what we're missing, and how our suppliers are performing. 🌟</em></p>
+    </div>
+  </div>
+</body>
+</html>

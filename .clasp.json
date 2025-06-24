@@ -1,6 +1,6 @@
 {
   "scriptId": "1Ndd93W8vzdZROaDRAeQN6iaA_tCYESNQaX3biaxCeqgHEFH3OBdQXrY3",
-  "rootDir": "",
+  "rootDir": "./src",
   "scriptExtensions": [
     ".js",
     ".gs"

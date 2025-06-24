@@ -39,6 +39,7 @@ function lookupDistributorEmail(distributorName) {
 
 /**
  * Grants edit access to a file for a list of user emails if not already present.
+ * Now includes role-based access control for archive files.
  */
 function grantEditAccessIfNotExists(fileId, userEmails) {
   var file = DriveApp.getFileById(fileId);
@@ -49,8 +50,196 @@ function grantEditAccessIfNotExists(fileId, userEmails) {
         file.addEditor(email);
       }
     });
+    
+    // Apply role-based access control for archive files
+    applyArchiveFileAccess(fileId);
+    
   } catch (err) {
     debugLog(`In grantEditAccessIfNotExists error:${err.message}`);
+  }
+}
+
+/**
+ * Apply role-based access control to archive files
+ * @param {string} fileId - The file ID to apply access control to
+ */
+function applyArchiveFileAccess(fileId) {
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const fileName = file.getName();
+    
+    // Check if this is a PO archive file
+    if (fileName.includes('POs-') || fileName.includes('PO-')) {
+      setupPOArchiveAccess(file);
+    }
+    
+  } catch (error) {
+    debugLog(`Error applying archive file access: ${error.message}`);
+  }
+}
+
+/**
+ * Set up access control for PO archive files
+ * Super users: Full edit access
+ * Purchase managers: Edit access to PO archives
+ * Inventory managers: View-only access
+ * @param {File} file - The Drive file to configure
+ */
+function setupPOArchiveAccess(file) {
+  try {
+    // Remove existing shares to reset permissions
+    const viewers = file.getViewers();
+    const editors = file.getEditors();
+    
+    // Remove all current editors except owner
+    editors.forEach(user => {
+      try {
+        file.removeEditor(user);
+      } catch (error) {
+        // Ignore errors (likely trying to remove owner)
+      }
+    });
+    
+    // Remove all current viewers
+    viewers.forEach(user => {
+      try {
+        file.removeViewer(user);
+      } catch (error) {
+        // Ignore errors
+      }
+    });
+    
+    // Add super users as editors
+    getUsersForRole('SUPER_USER').forEach(email => {
+      try {
+        file.addEditor(email);
+        debugLog(`Added super user editor: ${email}`);
+      } catch (error) {
+        debugLog(`Could not add super user editor ${email}: ${error.message}`);
+      }
+    });
+    
+    // Add purchase managers as editors
+    getUsersForRole('PURCHASE_MANAGER').forEach(email => {
+      try {
+        file.addEditor(email);
+        debugLog(`Added purchase manager editor: ${email}`);
+      } catch (error) {
+        debugLog(`Could not add purchase manager editor ${email}: ${error.message}`);
+      }
+    });
+    
+    // Add inventory managers as viewers only
+    getUsersForRole('INVENTORY_MANAGER').forEach(email => {
+      try {
+        file.addViewer(email);
+        debugLog(`Added inventory manager viewer: ${email}`);
+      } catch (error) {
+        debugLog(`Could not add inventory manager viewer ${email}: ${error.message}`);
+      }
+    });
+    
+    debugLog(`Archive access configured for: ${file.getName()}`);
+    
+  } catch (error) {
+    debugLog(`Error setting up PO archive access: ${error.message}`);
+  }
+}
+
+/**
+ * Enhanced version that applies role-based access to existing archive files
+ * Run this to update access on all existing archive files
+ */
+function updateAllArchiveFileAccess() {
+  if (!isSuperUser()) {
+    SpreadsheetApp.getUi().alert('Access Denied', 'Only super users can update archive file access.', SpreadsheetApp.getUi().ButtonSet.OK);
+    return;
+  }
+  
+  try {
+    const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+    const file = DriveApp.getFileById(ss.getId());
+    const folders = file.getParents();
+    
+    if (!folders.hasNext()) {
+      throw new Error('No parent folder found for main spreadsheet');
+    }
+    
+    const parentFolder = folders.next();
+    const poFolder = getOrCreatePOFolder(parentFolder);
+    
+    // Get all monthly folders
+    const monthFolders = poFolder.getFolders();
+    let updatedCount = 0;
+    
+    while (monthFolders.hasNext()) {
+      const monthFolder = monthFolders.next();
+      const archiveFiles = monthFolder.getFiles();
+      
+      while (archiveFiles.hasNext()) {
+        const archiveFile = archiveFiles.next();
+        
+        if (archiveFile.getName().includes('POs-')) {
+          setupPOArchiveAccess(archiveFile);
+          updatedCount++;
+        }
+      }
+    }
+    
+    debugLog(`Updated access for ${updatedCount} archive files`);
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Updated access for ${updatedCount} archive files`, 
+      'Archive Access Update Complete', 
+      5
+    );
+    
+  } catch (error) {
+    debugLog(`Error updating archive file access: ${error.message}`);
+    SpreadsheetApp.getUi().alert('Update Error', `Failed to update archive access: ${error.message}`, SpreadsheetApp.getUi().ButtonSet.OK);
+  }
+}
+
+/**
+ * Get or create the Purchase Orders folder
+ * @param {Folder} parentFolder - Parent folder
+ * @returns {Folder} PO folder
+ */
+function getOrCreatePOFolder(parentFolder) {
+  const folders = parentFolder.getFoldersByName('Purchase Orders');
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return parentFolder.createFolder('Purchase Orders');
+  }
+}
+
+/**
+ * Check archive file access for current user
+ * @param {string} fileId - File ID to check
+ * @returns {string} Access level: 'edit', 'view', or 'none'
+ */
+function checkArchiveFileAccess(fileId) {
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const currentUser = Session.getActiveUser().getEmail().toLowerCase();
+    
+    // Check if user is an editor
+    const editors = file.getEditors().map(user => user.getEmail().toLowerCase());
+    if (editors.includes(currentUser)) {
+      return 'edit';
+    }
+    
+    // Check if user is a viewer
+    const viewers = file.getViewers().map(user => user.getEmail().toLowerCase());
+    if (viewers.includes(currentUser)) {
+      return 'view';
+    }
+    
+    return 'none';
+    
+  } catch (error) {
+    debugLog(`Error checking archive file access: ${error.message}`);
+    return 'none';
   }
 }
 

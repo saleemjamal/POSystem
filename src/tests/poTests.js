@@ -45,9 +45,9 @@ function setupTestData() {
     const vendorSheet = ss.getSheetByName('Vendor_Details');
     if (vendorSheet) {
       const vendorData = [
-        ['TestDistributor1', 'testdist1@test.com'],
-        ['TestDistributor2', 'testdist2@test.com'],
-        ['TestDistributor3', 'testdist3@test.com']
+        ['TestDistributor1', 'karima@poppatjamals.com'],
+        ['TestDistributor2', 'karima@poppatjamals.com'],
+        ['TestDistributor3', 'karima@poppatjamals.com']
       ];
       
       // Find the last row and append test data

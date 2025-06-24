@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #1976d2;
+      margin-top: 0;
+      text-align: center;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 15px;
+    }
+    h2 {
+      color: #1976d2;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-left: 4px solid #1976d2;
+      padding-left: 15px;
+    }
+    h3 {
+      color: #333;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    .emoji {
+      font-size: 1.2em;
+      margin-right: 8px;
+    }
+    .workflow-step {
+      background: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .tip {
+      background: #e8f5e8;
+      border-left: 4px solid #4caf50;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    .status-pending { color: #ff9800; font-weight: bold; }
+    .status-approved { color: #4caf50; font-weight: bold; }
+    .status-sent { color: #2196f3; font-weight: bold; }
+    .status-received { color: #9c27b0; font-weight: bold; }
+    .contact-info {
+      background: #f3e5f5;
+      border: 1px solid #9c27b0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .quick-link {
+      background: #1976d2;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .quick-link:hover {
+      background: #1565c0;
+      text-decoration: none;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span class="emoji">📦</span>Purchase Manager Help Guide</h1>
+    
+    <div class="tip">
+      <strong>Welcome!</strong> You're responsible for creating purchase orders that keep all our stores stocked. This guide will help you master the system quickly.
+    </div>
+
+    <h2><span class="emoji">🎯</span>What You Can Do</h2>
+    <ul>
+      <li><strong>Create Purchase Orders</strong> for any store and brand combination</li>
+      <li><strong>Generate Multiple POs</strong> at once from system recommendations</li>
+      <li><strong>Edit PO Archives</strong> to make corrections when needed</li>
+      <li><strong>Update Vendor Information</strong> to keep supplier details current</li>
+    </ul>
+
+    <h2><span class="emoji">🚀</span>Your Daily Workflow</h2>
+    
+    <div class="workflow-step">
+      <h3>Step 1: Create Purchase Orders</h3>
+      <p><strong>Option A: Multiple POs (Recommended)</strong></p>
+      <ol>
+        <li>Click <strong>📦 Purchase Orders → 🚀 Generate Multiple POs</strong></li>
+        <li>System creates POs for all stores that need stock</li>
+        <li>Review the generated POs in POTracking sheet</li>
+      </ol>
+      
+      <p><strong>Option B: Single PO</strong></p>
+      <ol>
+        <li>Click <strong>📦 Purchase Orders → ➕ Create Single PO</strong></li>
+        <li>Choose store and brand from dropdowns</li>
+        <li>System creates PO with recommended quantities</li>
+      </ol>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 2: Review Your POs</h3>
+      <ul>
+        <li>Check the <strong>POTracking</strong> sheet for new POs</li>
+        <li>Verify amounts and distributors are correct</li>
+        <li>Make any needed corrections in the archive files</li>
+      </ul>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 3: That's It!</h3>
+      <ul>
+        <li>Super users will approve and send your POs</li>
+        <li>You'll see status updates in the POTracking sheet</li>
+        <li>System handles everything else automatically</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">📋</span>Understanding PO Status</h2>
+    <table>
+      <tr>
+        <th>Status</th>
+        <th>What It Means</th>
+      </tr>
+      <tr>
+        <td class="status-pending">Pending</td>
+        <td>PO created, waiting for approval</td>
+      </tr>
+      <tr>
+        <td class="status-approved">Approved</td>
+        <td>Management approved, ready to send</td>
+      </tr>
+      <tr>
+        <td class="status-sent">Sent</td>
+        <td>Emailed to distributor</td>
+      </tr>
+      <tr>
+        <td class="status-received">Partially Received</td>
+        <td>Some goods received</td>
+      </tr>
+      <tr>
+        <td class="status-received">Closed - Complete</td>
+        <td>All goods received</td>
+      </tr>
+      <tr>
+        <td class="status-received">Closed - Partial</td>
+        <td>Partially fulfilled, closed after 10 days</td>
+      </tr>
+    </table>
+
+    <h2><span class="emoji">✏️</span>Editing Purchase Orders</h2>
+    
+    <div class="warning">
+      <strong>Important:</strong> Only edit POs that haven't been sent yet!
+    </div>
+
+    <p><strong>What You Can Edit:</strong></p>
+    <ul>
+      <li>PO line items in archive files</li>
+      <li>Quantities and descriptions</li>
+      <li>Notes and special instructions</li>
+    </ul>
+
+    <p><strong>How to Edit:</strong></p>
+    <ol>
+      <li>Find your PO in the POTracking sheet</li>
+      <li>Click the <strong>Link</strong> to open the archive file</li>
+      <li>Make your changes directly in the sheet</li>
+      <li>Changes are automatically saved</li>
+    </ol>
+
+    <h2><span class="emoji">🏪</span>Our Store Locations</h2>
+    <ul>
+      <li><strong>POPPAT JAMALS ADYAR</strong> (ADY)</li>
+      <li><strong>POPPAT JAMAL & SONS MOUNT ROAD</strong> (MTR)</li>
+      <li><strong>POPPAT JAMALS ANNA NAGAR</strong> (ANN)</li>
+      <li><strong>POPPAT JAMALS COIMBATORE</strong> (CBE)</li>
+      <li><strong>POPPAT JAMALS VIJAYAWADA</strong> (VJW)</li>
+    </ul>
+
+    <h2><span class="emoji">❓</span>Frequently Asked Questions</h2>
+    
+    <h3>Q: How do I know what quantities to order?</h3>
+    <p>The system automatically recommends quantities based on sales data and current stock levels. You don't need to calculate anything!</p>
+
+    <h3>Q: Can I create POs for all stores at once?</h3>
+    <p>Yes! Use "🚀 Generate Multiple POs" to create POs for all stores that need stock. This is the fastest way.</p>
+
+    <h3>Q: What if I make a mistake in a PO?</h3>
+    <p>You can edit the PO archive file directly, but only before it's sent to the distributor. After sending, contact administrators for changes.</p>
+
+    <h3>Q: How do I know if my PO was sent?</h3>
+    <p>Check the <strong>Status</strong> column in POTracking sheet. It will show "Sent" when emailed to the distributor.</p>
+
+    <h3>Q: Can I see what's been delivered?</h3>
+    <p>Yes! Check the <strong>FulfillmentPercentage</strong> column to see delivery progress for each PO.</p>
+
+    <h2><span class="emoji">💡</span>Pro Tips</h2>
+    <div class="tip">
+      <ul>
+        <li><strong>Use batch generation</strong> - It's faster and ensures nothing is missed</li>
+        <li><strong>Review before approval</strong> - Check your POs in POTracking sheet</li>
+        <li><strong>Keep vendor info updated</strong> - Accurate contacts ensure smooth delivery</li>
+        <li><strong>Monitor fulfillment</strong> - Track delivery progress for better planning</li>
+      </ul>
+    </div>
+
+    <div class="contact-info">
+      <h3><span class="emoji">🆘</span>Need Help?</h3>
+      <p><strong>For Technical Issues or System Access:</strong></p>
+      <p>📧 <strong>saleem@poppatjamals.com</strong> or <strong>karima@poppatjamals.com</strong></p>
+      <p>They can help with system problems, access issues, or training questions.</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+      <p><em>Remember: You're the backbone of our purchasing process! Your accurate POs keep all our stores stocked and customers happy. 🌟</em></p>
+    </div>
+  </div>
+</body>
+</html>

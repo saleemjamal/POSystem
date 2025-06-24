@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #1976d2;
+      margin-top: 0;
+      text-align: center;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 15px;
+    }
+    h2 {
+      color: #1976d2;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-left: 4px solid #1976d2;
+      padding-left: 15px;
+    }
+    h3 {
+      color: #333;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    .emoji {
+      font-size: 1.2em;
+      margin-right: 8px;
+    }
+    .admin-section {
+      background: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .workflow-phase {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .tip {
+      background: #e8f5e8;
+      border-left: 4px solid #4caf50;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .critical {
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .kpi-card {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .kpi-card h4 {
+      margin: 0 0 10px 0;
+      color: #1976d2;
+    }
+    .contact-section {
+      background: #f3e5f5;
+      border: 1px solid #9c27b0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .quick-action {
+      background: #e3f2fd;
+      border: 1px solid #1976d2;
+      border-radius: 8px;
+      padding: 15px;
+    }
+    .quick-action h4 {
+      margin: 0 0 10px 0;
+      color: #1976d2;
+    }
+    .status-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .status-item {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .status-pending { background: #fff3e0; color: #e65100; }
+    .status-approved { background: #e8f5e8; color: #2e7d32; }
+    .status-sent { background: #e3f2fd; color: #1565c0; }
+    .status-received { background: #f3e5f5; color: #7b1fa2; }
+    .status-closed { background: #f5f5f5; color: #424242; }
+    .code-block {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 12px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span class="emoji">📋</span>Super User Administrator Guide</h1>
+    
+    <div class="admin-section">
+      <strong>Welcome, System Administrator!</strong> You have complete control over the procurement system. This guide covers everything you need to manage users, oversee operations, and maintain system health.
+    </div>
+
+    <h2><span class="emoji">🎯</span>Your Admin Responsibilities</h2>
+    <div class="quick-actions">
+      <div class="quick-action">
+        <h4>🔧 System Administration</h4>
+        <p>Configure security, automation, triggers, and user access</p>
+      </div>
+      <div class="quick-action">
+        <h4>📊 Process Oversight</h4>
+        <p>Approve POs, monitor performance, resolve operational issues</p>
+      </div>
+      <div class="quick-action">
+        <h4>👥 User Management</h4>
+        <p>Control access levels, train users, provide technical support</p>
+      </div>
+      <div class="quick-action">
+        <h4>📈 Data Analysis</h4>
+        <p>Run SKU classification, generate insights, optimize operations</p>
+      </div>
+    </div>
+
+    <h2><span class="emoji">🔄</span>Complete Workflow Management</h2>
+    
+    <div class="workflow-phase">
+      <h3>Phase 1: Product Analysis</h3>
+      <ol>
+        <li>Click <strong>📋 Procurement → 🔍 Analyze & Classify Products</strong></li>
+        <li>Review SKU performance and recommendations in SKUClassification sheet</li>
+        <li>Adjust classification parameters in constants.js if needed</li>
+      </ol>
+      <div class="tip">
+        <strong>Best Practice:</strong> Run this monthly to keep recommendations current with sales trends.
+      </div>
+    </div>
+
+    <div class="workflow-phase">
+      <h3>Phase 2: Purchase Order Creation & Approval</h3>
+      <ol>
+        <li>Use <strong>📦 Purchase Orders → 🚀 Generate Multiple POs</strong> or let Purchase Manager handle</li>
+        <li>Review generated POs in POTracking sheet</li>
+        <li><strong>Approve POs:</strong> Check "Approved" checkbox and change Status to "Approved"</li>
+      </ol>
+      <div class="warning">
+        <strong>Important:</strong> Always verify distributor information and amounts before approval.
+      </div>
+    </div>
+
+    <div class="workflow-phase">
+      <h3>Phase 3: Send to Distributors</h3>
+      <ol>
+        <li>Click <strong>📦 Purchase Orders → 📧 Send Approved POs</strong></li>
+        <li>System automatically emails POs to distributors with professional formatting</li>
+        <li>Monitor POTracking sheet for status updates and delivery confirmations</li>
+      </ol>
+    </div>
+
+    <div class="workflow-phase">
+      <h3>Phase 4: Monitor Receipts & Fulfillment</h3>
+      <ol>
+        <li>Review GRNTracking sheet for receipt patterns</li>
+        <li>Monitor fulfillment percentages in POTracking sheet</li>
+        <li>Address any late or partial fulfillment issues</li>
+      </ol>
+    </div>
+
+    <h2><span class="emoji">⚙️</span>System Administration</h2>
+
+    <div class="admin-section">
+      <h3>One-Time Setup (Run These Once):</h3>
+      
+      <div class="quick-actions">
+        <div class="quick-action">
+          <h4>🔧 Enable Complete Automation</h4>
+          <p><strong>⚙️ System Settings → 🔧 Enable Automation</strong></p>
+          <p>Sets up hourly GRN approval and weekly PO closure</p>
+        </div>
+        <div class="quick-action">
+          <h4>🔒 Secure the System</h4>
+          <p><strong>⚙️ System Settings → 🔒 Setup Security</strong></p>
+          <p>Applies role-based protection to all sheets</p>
+        </div>
+        <div class="quick-action">
+          <h4>👤 Verify Access</h4>
+          <p><strong>⚙️ System Settings → 👤 My Access Level</strong></p>
+          <p>Confirm you have Super User permissions</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Ongoing System Management:</h3>
+    <ul>
+      <li><strong>Monitor Automation:</strong> Check DebugLog sheet weekly for errors</li>
+      <li><strong>User Management:</strong> Add/remove users by updating userRoles.js</li>
+      <li><strong>System Maintenance:</strong> Use 🛑 Disable Automation during updates</li>
+      <li><strong>Performance Review:</strong> Monitor execution logs in Apps Script console</li>
+    </ul>
+
+    <h2><span class="emoji">📊</span>Key Performance Indicators</h2>
+    
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <h4>Procurement Efficiency</h4>
+        <p>• PO approval time (&lt; 24 hrs)</p>
+        <p>• Email delivery success rate</p>
+        <p>• Time to SKU classification</p>
+      </div>
+      <div class="kpi-card">
+        <h4>Supplier Performance</h4>
+        <p>• Average fulfillment %</p>
+        <p>• Time to first delivery</p>
+        <p>• Partial delivery frequency</p>
+      </div>
+      <div class="kpi-card">
+        <h4>System Health</h4>
+        <p>• Automation success rate</p>
+        <p>• User activity levels</p>
+        <p>• Error resolution time</p>
+      </div>
+      <div class="kpi-card">
+        <h4>Business Impact</h4>
+        <p>• SKU performance trends</p>
+        <p>• Inventory turnover</p>
+        <p>• Cost optimization</p>
+      </div>
+    </div>
+
+    <h2><span class="emoji">👥</span>User Management</h2>
+
+    <table>
+      <tr>
+        <th>Role</th>
+        <th>Current Users</th>
+        <th>Permissions</th>
+      </tr>
+      <tr>
+        <td><strong>Super Users</strong></td>
+        <td>saleem@poppatjamals.com<br>karima@poppatjamals.com</td>
+        <td>Full system access, all operations</td>
+      </tr>
+      <tr>
+        <td><strong>Purchase Manager</strong></td>
+        <td>purchasemanager@poppatjamals.com</td>
+        <td>Create/edit POs, archive access</td>
+      </tr>
+      <tr>
+        <td><strong>Inventory Manager</strong></td>
+        <td>backoffice@poppatjamals.com</td>
+        <td>Create GRNs, vendor data updates</td>
+      </tr>
+    </table>
+
+    <h3>Adding New Users:</h3>
+    <ol>
+      <li>Edit <code>userRoles.js</code> file in Apps Script editor</li>
+      <li>Add email address to appropriate role array</li>
+      <li>Re-run <strong>🔒 Setup Security</strong> to apply changes</li>
+      <li>Test access with new user account</li>
+    </ol>
+
+    <h2><span class="emoji">📋</span>PO Status Reference</h2>
+    
+    <div class="status-legend">
+      <span class="status-item status-pending">Pending</span>
+      <span class="status-item status-approved">Approved</span>
+      <span class="status-item status-sent">Sent</span>
+      <span class="status-item status-received">Partially Received</span>
+      <span class="status-item status-closed">Closed - Complete</span>
+      <span class="status-item status-closed">Closed - Partial</span>
+    </div>
+
+    <table>
+      <tr>
+        <th>Status</th>
+        <th>Meaning</th>
+        <th>Your Action</th>
+      </tr>
+      <tr>
+        <td>Pending</td>
+        <td>PO created, awaiting your approval</td>
+        <td>Review and approve if accurate</td>
+      </tr>
+      <tr>
+        <td>Approved</td>
+        <td>You've approved, ready to send</td>
+        <td>Send via "📧 Send Approved POs"</td>
+      </tr>
+      <tr>
+        <td>Sent</td>
+        <td>Emailed to distributor</td>
+        <td>Monitor for goods receipt</td>
+      </tr>
+      <tr>
+        <td>Partially Received</td>
+        <td>Some goods received, more expected</td>
+        <td>Track additional deliveries</td>
+      </tr>
+      <tr>
+        <td>Closed - Complete</td>
+        <td>100% fulfilled, automatically closed</td>
+        <td>Review performance metrics</td>
+      </tr>
+      <tr>
+        <td>Late Fulfillment</td>
+        <td>Goods received after auto-closure</td>
+        <td>Follow up with distributor</td>
+      </tr>
+    </table>
+
+    <h2><span class="emoji">🚨</span>Troubleshooting Common Issues</h2>
+
+    <h3>"Automation not working"</h3>
+    <div class="code-block">
+      1. Check: ⚙️ System Settings → 🔧 Enable Automation
+      2. Verify triggers in Apps Script console
+      3. Review DebugLog sheet for errors
+      4. Manually run functions to test
+    </div>
+
+    <h3>"User can't access features"</h3>
+    <div class="code-block">
+      1. Check user role in userRoles.js
+      2. Verify email address spelling
+      3. Re-run 🔒 Setup Security
+      4. Test with user's account
+    </div>
+
+    <h3>"Email sending failed"</h3>
+    <div class="code-block">
+      1. Check distributor emails in Vendor_Details
+      2. Verify email quotas not exceeded
+      3. Review OUTLET_EMAIL_RULES in constants.js
+      4. Test with manual send
+    </div>
+
+    <h3>"No eligible POs for GRN"</h3>
+    <div class="code-block">
+      1. Verify PO status is "Sent", "Partially Received", or "Late Fulfillment"
+      2. Check PO exists in POTracking sheet
+      3. Confirm PO was actually sent to distributor
+    </div>
+
+    <h2><span class="emoji">🔧</span>Emergency Procedures</h2>
+    
+    <div class="critical">
+      <h3>Emergency System Controls</h3>
+      <p>Use these functions in Apps Script console if needed:</p>
+      <ul>
+        <li><code>removeAllSheetProtections()</code> - Remove all protections for emergency access</li>
+        <li><code>removeAllTriggers()</code> - Disable automation during maintenance</li>
+        <li><code>updatePOFulfillmentMetrics(poNumber)</code> - Manual fulfillment calculation</li>
+        <li><code>closeOldPOs()</code> - Manual PO closure if automation fails</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">📅</span>Weekly Admin Checklist</h2>
+
+    <div class="workflow-phase">
+      <h3>Monday (PO Management Day):</h3>
+      <ul>
+        <li>☐ Review weekend automation logs in DebugLog sheet</li>
+        <li>☐ Check and approve any pending POs</li>
+        <li>☐ Send approved POs to distributors</li>
+        <li>☐ Monitor for delivery issues or delays</li>
+      </ul>
+
+      <h3>Wednesday (Mid-week Check):</h3>
+      <ul>
+        <li>☐ Review GRN activity and fulfillment patterns</li>
+        <li>☐ Check fulfillment percentages for anomalies</li>
+        <li>☐ Address any user access requests</li>
+        <li>☐ Review system performance metrics</li>
+      </ul>
+
+      <h3>Friday (Week Wrap-up):</h3>
+      <ul>
+        <li>☐ Analyze week's procurement performance</li>
+        <li>☐ Update vendor information if needed</li>
+        <li>☐ Plan next week's SKU classification</li>
+        <li>☐ Review and archive completed processes</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">🔍</span>Monthly Deep Dive Tasks</h2>
+    <ul>
+      <li><strong>SKU Analysis:</strong> Run classification and review parameter effectiveness</li>
+      <li><strong>User Audit:</strong> Review roles, permissions, and access patterns</li>
+      <li><strong>Performance Review:</strong> Analyze distributor performance and fulfillment trends</li>
+      <li><strong>System Optimization:</strong> Check for opportunities to improve automation</li>
+      <li><strong>Data Cleanup:</strong> Archive old data and clean up test records</li>
+    </ul>
+
+    <h2><span class="emoji">💡</span>Pro Tips for System Excellence</h2>
+    
+    <div class="tip">
+      <h3>Performance Optimization:</h3>
+      <ul>
+        <li><strong>Proactive monitoring:</strong> Check automation daily, don't wait for problems</li>
+        <li><strong>Regular updates:</strong> Keep vendor data current for smooth operations</li>
+        <li><strong>Trend analysis:</strong> Look for patterns in fulfillment and performance</li>
+        <li><strong>User feedback:</strong> Regularly check with team for improvement opportunities</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">🌟</span>Your Strategic Impact</h2>
+    
+    <div class="admin-section">
+      <h3>System Reliability:</h3>
+      <p>Your oversight ensures 99.9% uptime and quick issue resolution keeps operations smooth.</p>
+
+      <h3>Business Efficiency:</h3>
+      <p>Streamlined procurement saves time and money while data-driven decisions improve inventory management.</p>
+
+      <h3>Team Enablement:</h3>
+      <p>Proper access control keeps data secure while clear processes reduce confusion and errors.</p>
+
+      <h3>Strategic Value:</h3>
+      <p>Performance metrics guide business decisions and system scalability supports growth.</p>
+    </div>
+
+    <div class="contact-section">
+      <h3><span class="emoji">📞</span>Technical Support Resources</h3>
+      <p><strong>For System Issues:</strong></p>
+      <ul style="text-align: left; display: inline-block;">
+        <li><strong>Apps Script Console:</strong> Check execution logs and errors</li>
+        <li><strong>DebugLog Sheet:</strong> Review system error messages</li>
+        <li><strong>Google Workspace Status:</strong> Check for service outages</li>
+      </ul>
+      
+      <p><strong>Documentation Resources:</strong></p>
+      <ul style="text-align: left; display: inline-block;">
+        <li><strong>README.md:</strong> Complete technical documentation</li>
+        <li><strong>PROCESS_FLOW.md:</strong> Detailed workflow documentation</li>
+        <li><strong>Role Guides:</strong> User-specific help documents</li>
+      </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+      <p><em>Remember: You're not just managing a system - you're enabling efficient, data-driven procurement that directly impacts business success! 🚀</em></p>
+    </div>
+  </div>
+</body>
+</html>

@@ -96,7 +96,7 @@ const wantedColumns=[6,7,9]
     'karima@poppatjamals.com'
   ].join(',')
 
-const editors      = ["karima@poppatjamals.com", "purchasemanager@poppatjamals.com"];
+const editors = ["saleem@poppatjamals.com", "karima@poppatjamals.com"];
   
 
 /**  Store-specific e-mail routing  */
