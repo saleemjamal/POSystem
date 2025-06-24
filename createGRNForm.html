@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #1976d2;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 60px;
+      resize: vertical;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+    .btn {
+      background-color: #1976d2;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #1565c0;
+    }
+    .btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    .error {
+      color: #d32f2f;
+      background-color: #ffebee;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .success {
+      color: #2e7d32;
+      background-color: #e8f5e8;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .grn-number {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .po-info {
+      background-color: #e3f2fd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      font-size: 12px;
+    }
+    .required {
+      color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Goods Receipt Note (GRN)</h2>
+    
+    <div id="loading" class="loading">Loading eligible POs...</div>
+    
+    <div id="form" style="display: none;">
+      <div id="error" class="error" style="display: none;"></div>
+      <div id="success" class="success" style="display: none;"></div>
+      
+      <div class="form-group">
+        <label for="poNumber">PO Number: <span class="required">*</span></label>
+        <select id="poNumber" onchange="onPOChange()">
+          <option value="">Select a PO...</option>
+        </select>
+      </div>
+      
+      <div id="poInfo" class="po-info" style="display: none;"></div>
+      
+      <div class="form-group">
+        <label for="invoiceNumber">Invoice Number: <span class="required">*</span></label>
+        <input type="text" id="invoiceNumber" placeholder="Enter invoice number from distributor">
+      </div>
+      
+      <div class="form-group">
+        <label for="grnAmount">GRN Amount (₹): <span class="required">*</span></label>
+        <input type="number" id="grnAmount" step="0.01" min="0" placeholder="Enter amount received">
+      </div>
+      
+      <div class="form-group">
+        <label for="grnDate">GRN Date:</label>
+        <input type="date" id="grnDate">
+      </div>
+      
+      <div class="form-group">
+        <label for="notes">Notes:</label>
+        <textarea id="notes" placeholder="Optional notes about this GRN..."></textarea>
+      </div>
+      
+      <button id="createBtn" class="btn" onclick="createGRNFromUIHandler()" disabled>
+        Create GRN
+      </button>
+      
+      <div id="grnNumber" class="grn-number" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    let eligiblePOs = [];
+    
+    // Load data when page loads
+    window.onload = function() {
+      // Set today's date as default
+      document.getElementById('grnDate').value = new Date().toISOString().split('T')[0];
+      
+      google.script.run
+        .withSuccessHandler(onEligiblePOsLoaded)
+        .withFailureHandler(onError)
+        .getEligiblePOsForGRN();
+    };
+    
+    function onEligiblePOsLoaded(pos) {
+      eligiblePOs = pos;
+      
+      // Populate PO dropdown
+      const poSelect = document.getElementById('poNumber');
+      pos.forEach(po => {
+        const option = document.createElement('option');
+        option.value = po.poNumber;
+        option.textContent = `${po.poNumber} - ${po.outlet} - ${po.brand} (${po.status})`;
+        poSelect.appendChild(option);
+      });
+      
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('form').style.display = 'block';
+    }
+    
+    function onError(error) {
+      document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + error.message + '</div>';
+    }
+    
+    function onPOChange() {
+      const poSelect = document.getElementById('poNumber');
+      const selectedPO = poSelect.value;
+      const poInfo = document.getElementById('poInfo');
+      const createBtn = document.getElementById('createBtn');
+      
+      if (selectedPO) {
+        const po = eligiblePOs.find(p => p.poNumber === selectedPO);
+        if (po) {
+          poInfo.innerHTML = `<strong>Outlet:</strong> ${po.outlet}<br><strong>Brand:</strong> ${po.brand}<br><strong>Status:</strong> ${po.status}`;
+          poInfo.style.display = 'block';
+        }
+        updateCreateButtonState();
+      } else {
+        poInfo.style.display = 'none';
+        createBtn.disabled = true;
+      }
+    }
+    
+    function updateCreateButtonState() {
+      const poNumber = document.getElementById('poNumber').value;
+      const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
+      const grnAmount = document.getElementById('grnAmount').value;
+      const createBtn = document.getElementById('createBtn');
+      
+      createBtn.disabled = !(poNumber && invoiceNumber && grnAmount && parseFloat(grnAmount) > 0);
+    }
+    
+    // Add event listeners for form validation
+    document.getElementById('invoiceNumber').addEventListener('input', updateCreateButtonState);
+    document.getElementById('grnAmount').addEventListener('input', updateCreateButtonState);
+    
+    function createGRNFromUIHandler() {
+      const poNumber = document.getElementById('poNumber').value;
+      const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
+      const grnAmount = parseFloat(document.getElementById('grnAmount').value);
+      const grnDate = document.getElementById('grnDate').value;
+      const notes = document.getElementById('notes').value.trim();
+      
+      const createBtn = document.getElementById('createBtn');
+      const errorDiv = document.getElementById('error');
+      const successDiv = document.getElementById('success');
+      const grnNumberDiv = document.getElementById('grnNumber');
+      
+      // Validation
+      if (!poNumber || !invoiceNumber || !grnAmount || grnAmount <= 0) {
+        showError('Please fill in all required fields with valid values.');
+        return;
+      }
+      
+      // Clear previous messages
+      errorDiv.style.display = 'none';
+      successDiv.style.display = 'none';
+      grnNumberDiv.style.display = 'none';
+      
+      // Disable button and show loading
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating GRN...';
+      
+      google.script.run
+        .withSuccessHandler(onGRNCreated)
+        .withFailureHandler(onGRNCreateError)
+        .createGRNFromUI(poNumber, invoiceNumber, grnAmount, grnDate, notes);
+    }
+    
+    function onGRNCreated(result) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create GRN';
+      
+      if (result.success) {
+        showSuccess(result.message);
+        document.getElementById('grnNumber').innerHTML = 'GRN Number: ' + result.grnNumber;
+        document.getElementById('grnNumber').style.display = 'block';
+        
+        // Reset form
+        document.getElementById('poNumber').value = '';
+        document.getElementById('invoiceNumber').value = '';
+        document.getElementById('grnAmount').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('grnDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('poInfo').style.display = 'none';
+        createBtn.disabled = true;
+      } else {
+        showError(result.message);
+      }
+    }
+    
+    function onGRNCreateError(error) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create GRN';
+      showError('Error creating GRN: ' + error.message);
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+    
+    function showSuccess(message) {
+      const successDiv = document.getElementById('success');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

@@ -4,6 +4,24 @@ const MAIN_SS_ID = '1JgpxObkeY09iqc9Uj978O8cARvwjbxbbJbHbOd0OP1g'
 
 const BINNING_CONFIG = "BinningConfig";
 
+// GRN Constants
+const GRN_SHEET_NAME = "GRNTracking";
+const PO_AUTO_CLOSE_DAYS = 10; // Days after which POs are auto-closed
+const GRN_AUTO_APPROVE_MINUTES = 60; // Minutes after which GRNs are auto-approved
+const GRN_STATUS_MAPPING = {
+  SENT: 'Sent',
+  PARTIALLY_RECEIVED: 'Partially Received', 
+  LATE_FULFILLMENT: 'Late Fulfillment',
+  CLOSED_COMPLETE: 'Closed - Complete',
+  CLOSED_PARTIAL: 'Closed - Partial',
+  CLOSED_NO_RECEIPT: 'Closed - No Receipt'
+};
+
+const GRN_APPROVAL_TYPES = {
+  MANUAL: 'Manual',
+  AUTO: 'Auto'
+};
+
 const GM_HIGH_MARGIN = 0.10;
 const GM_LOW_MARGIN = -0.10;
 

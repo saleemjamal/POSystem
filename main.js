@@ -14,8 +14,37 @@ function onOpen() {
     .addSeparator()
     .addItem('Send Approved POs', 'sendApprovedPOs')
     .addSeparator()
+    .addItem('Create GRN', 'showCreateGRNDialog')
+    .addSeparator()
     .addItem('Help', 'showHelpDialog')
     .addToUi();
+}
+
+/**
+ * Shows the Create GRN dialog/sidebar.
+ */
+function showCreateGRNDialog() {
+  const html = HtmlService.createHtmlOutputFromFile('createGRNForm.html')
+    .setTitle('Create Goods Receipt Note (GRN)')
+    .setWidth(450);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+/**
+ * OnEdit trigger to handle GRN approval and other sheet changes
+ */
+function onEdit(e) {
+  try {
+    // Handle GRN approval
+    if (e.source.getActiveSheet().getName() === 'GRNTracking') {
+      handleGRNApproval(e);
+    }
+    
+    // Add other onEdit handlers here as needed
+    
+  } catch (error) {
+    debugLog(`OnEdit error: ${error.message}`);
+  }
 }
 
 /**
