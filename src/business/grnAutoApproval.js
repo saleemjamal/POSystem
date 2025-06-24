@@ -26,7 +26,7 @@ function autoApproveOldGRNs() {
     
     // Auto-approve if: not already approved AND older than cutoff time
     if (!isApproved && grnDate < autoApprovalCutoff) {
-      // Set approved checkbox
+      // Set approved checkbox to true
       grnSheet.getRange(i + 1, approvedCol + 1).setValue(true);
       // Set approval date
       grnSheet.getRange(i + 1, dateApprovedCol + 1).setValue(now);

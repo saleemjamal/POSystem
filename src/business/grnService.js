@@ -181,6 +181,11 @@ function getOrCreateGRNSheet(ss) {
     grnSheet.getRange('F:F').setNumberFormat('dd/mm/yyyy'); // GRNDate
     grnSheet.getRange('G:G').setNumberFormat('"₹"#,##,##0.00'); // GRNAmount
     grnSheet.getRange('J:J').setNumberFormat('dd/mm/yyyy'); // DateApproved
+    
+    // Set checkbox validation for Approved column
+    grnSheet.getRange('H2:H1000').setDataValidation(
+      SpreadsheetApp.newDataValidation().requireCheckbox().build()
+    );
   }
   
   return grnSheet;
@@ -288,6 +293,7 @@ function updatePOFulfillmentMetrics(poNumber) {
   
   const poNumCol = poHeaders.indexOf('PONumber');
   const poAmountCol = poHeaders.indexOf('POAmount');
+  const statusCol = poHeaders.indexOf('Status');
   let fulfillmentCol = poHeaders.indexOf('FulfillmentAmount');
   let fulfillmentPctCol = poHeaders.indexOf('FulfillmentPercentage');
   
@@ -306,11 +312,18 @@ function updatePOFulfillmentMetrics(poNumber) {
     if (String(poData[i][poNumCol]) === String(poNumber)) {
       const poAmount = Number(poData[i][poAmountCol]);
       const fulfillmentPct = poAmount > 0 ? (totalGRNAmount / poAmount) * 100 : 0;
+      const currentStatus = poData[i][statusCol];
       
       poSheet.getRange(i + 1, fulfillmentCol + 1).setValue(totalGRNAmount)
              .setNumberFormat('"₹"#,##,##0.00');
       poSheet.getRange(i + 1, fulfillmentPctCol + 1).setValue(fulfillmentPct / 100)
              .setNumberFormat('0.00%');
+      
+      // Update status based on fulfillment if currently "Partially Received"
+      if (currentStatus === 'Partially Received' && fulfillmentPct >= 100) {
+        poSheet.getRange(i + 1, statusCol + 1).setValue('Closed - Complete');
+        debugLog(`PO ${poNumber} status updated to 'Closed - Complete' (100% fulfilled)`);
+      }
       
       debugLog(`Updated fulfillment for PO ${poNumber}: ${fulfillmentPct.toFixed(1)}%`);
       break;
