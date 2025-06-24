@@ -310,3 +310,55 @@ function sendApprovedPOs() {
   }
   debugLog(`PO Sending Complete! Sent: ${sentCount}, Errors: ${errorCount}`);
 } 
+
+
+/**
+ * Run manually (menu, button, or time-based trigger) to create POs
+ * for every row in POBatch that is not yet marked DONE.
+ */
+function generatePOsFromBatch() {
+
+  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+  const batchSheet = ss.getSheetByName('POBatch');
+  if (!batchSheet) throw new Error('POBatch sheet not found');
+
+  const data = batchSheet.getDataRange().getValues();
+  const hdr = data[0];
+  const colOutlet = hdr.indexOf('Outlet');
+  const colBrand = hdr.indexOf('Brand');
+  const colPO = hdr.indexOf('PONumber');
+  const colStatus = hdr.indexOf('Status');
+
+  for (let r = 1; r < data.length; r++) {
+
+      const status = (colStatus === -1) ? '' : data[r][colStatus];
+      if (String(status).trim().toUpperCase() === 'DONE') continue;   // skip
+
+      const outletName = data[r][colOutlet];
+      const brandName = data[r][colBrand];
+      if (!outletName && !brandName) break;                           // Break on first blank
+
+      // Generate or use existing PO number
+      let poNumber = (colPO !== -1 && data[r][colPO]) ? data[r][colPO] : makeSequentialPONumber();
+
+      // ---- create the PO (all your heavy lifting lives inside) ----
+      debugLog(
+          `Row ${r + 1}: outlet="${outletName}", brand="${brandName}", status="${status}"`
+      );
+
+      createPO(outletName.replace(/\s+/g, ' ').trim(), brandName, poNumber);
+
+      // ---- mark row as processed so you can re-run safely ----
+      //if (colStatus === -1) { batchSheet.getRange(1, hdr.length + 1).setValue('Status'); }  // add header once
+      batchSheet.getRange(r + 1, (colStatus === -1 ? hdr.length : colStatus) + 1).setValue('DONE');
+      batchSheet.getRange(r + 1, (colStatus === -1 ? hdr.length : colPO) + 1).setValue(poNumber);
+      SpreadsheetApp.flush();   // optional: writeback each loop
+  }
+
+  SpreadsheetApp.getUi().alert('Bulk PO generation finished 🎉');
+}
+
+
+
+
+

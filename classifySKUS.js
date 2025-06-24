@@ -1,8 +1,14 @@
 function classifySKUs() {
     try {
+        debugLog('classifySKUs: START');
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         const sheet = ss.getSheetByName("SalesData");
+        if (!sheet) {
+            debugLog('classifySKUs: SalesData sheet not found');
+            return;
+        }
         const data = sheet.getDataRange().getValues();
+        debugLog(`classifySKUs: Read ${data.length - 1} rows from SalesData`);
         const headers = data[0];
         const rows = data.slice(1);
 
@@ -18,6 +24,8 @@ function classifySKUs() {
         const idxBrand = headers.indexOf("Brand");
         const idxOutlet = headers.indexOf("OutletName");
 
+        debugLog('classifySKUs: Indexes - ' + JSON.stringify({idxSKU, idxItemName, idxSoldQty, idxRevenue, idxGrossMargin, idxCostPrice, idxBillDate, idxInwardDate, idxCurrentStock, idxBrand, idxOutlet}));
+
         const skuStats = {};
         const outletStats = {};
         const brandOutletStats = {};
@@ -25,11 +33,14 @@ function classifySKUs() {
 
         let avgCostBins = readBinningConfigSheet();
         if (!avgCostBins) {
-          // Build it from scratch using your computeAverageCostBins() or similar
+          debugLog('classifySKUs: No avgCostBins found, computing new bins');
           avgCostBins = computeAverageCostBins(rows, idxSKU, idxOutlet, idxCostPrice);
           writeBinningConfigSheet(avgCostBins);
+        } else {
+          debugLog('classifySKUs: avgCostBins loaded');
         }
 
+        debugLog('classifySKUs: Starting row processing');
         rows.forEach(row => {
             const sku = row[idxSKU];
             const itemName = row[idxItemName];
@@ -82,6 +93,7 @@ function classifySKUs() {
             outletStats[outlet].totalRev += rev;
             outletStats[outlet].totalGM += gm;
         });
+        debugLog('classifySKUs: Finished row processing');
 
         for (const key in brandOutletStats) {
             const skuList = brandOutletStats[key].skuList.sort((a, b) => b.rev - a.rev);
@@ -105,6 +117,7 @@ function classifySKUs() {
                 skuStats[entry.skuKey].volRank = share <= VOL_RANK_A ? "Fast" : share <= VOL_RANK_B ? "Medium" : "Slow";
             });
         }
+        debugLog('classifySKUs: Finished brandOutletStats loop');
         // YOU MUST CHANGE THIS EVERY MONTH
         const today = new Date();
         const output = [];
@@ -198,13 +211,31 @@ function classifySKUs() {
 
             output.push([
                 s.outlet, s.brand, sku, s.itemName,
-                // ... existing code ...
+                avgCost, RevClass, MarginClass, VelocityClass,BinQty, SuggestedQty, s.stock, FinalOrderQty, UsageReco, Justification
             ]);
         }
+        debugLog('classifySKUs: Finished skuStats loop, output length: ' + output.length);
 
+        // Use user-specified header
+        const header = [
+          'Outlet', 'Brand', 'SKU', 'ItemName', 'AvgCost', 'RevClass', 'MarginClass', 'VelocityClass',
+          'BinQty', 'SuggestedQty', 'CS', 'FinalOrderQty', 'UsageReco', 'Justification'
+        ];
+        // Write to SKUClassification sheet (clear contents, do not delete)
+        let skuSheet = ss.getSheetByName('SKUClassification');
+        if (!skuSheet) {
+          skuSheet = ss.insertSheet('SKUClassification');
+        } else {
+          skuSheet.clearContents();
+        }
+        skuSheet.getRange(1, 1, 1, header.length).setValues([header]);
+        if (output.length > 0) {
+          skuSheet.getRange(2, 1, output.length, header.length).setValues(output);
+        }
+        debugLog('classifySKUs: Wrote output to SKUClassification with custom header (simple logic)');
         return output;
     } catch (e) {
-        Logger.log("Error in classifySKUs: " + e.message);
-        return [];
+        debugLog('classifySKUs: ERROR - ' + e.message);
+        throw e;
     }
 } 
