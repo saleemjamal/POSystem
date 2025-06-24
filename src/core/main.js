@@ -115,7 +115,7 @@ function secureShowCreateGRNDialog() {
  * Shows the Create GRN dialog/sidebar.
  */
 function showCreateGRNDialog() {
-  const html = HtmlService.createHtmlOutputFromFile('createGRNForm.html')
+  const html = HtmlService.createHtmlOutputFromFile('ui/createGRNForm.html')
     .setTitle('📥 Record Goods Receipt')
     .setWidth(450);
   SpreadsheetApp.getUi().showSidebar(html);
@@ -249,7 +249,7 @@ We're here to help! 😊`;
  * Shows the Create PO dialog/sidebar.
  */
 function showCreatePODialog() {
-  const html = HtmlService.createHtmlOutputFromFile('createPOForm.html')
+  const html = HtmlService.createHtmlOutputFromFile('ui/createPOForm.html')
     .setTitle('➕ Create New Purchase Order')
     .setWidth(400);
   SpreadsheetApp.getUi().showSidebar(html);
@@ -273,19 +273,19 @@ function showHelpDialog() {
   // Show role-specific help
   switch(userRole) {
     case 'PURCHASE_MANAGER':
-      htmlFile = 'purchaseManagerHelp.html';
+      htmlFile = 'ui/purchaseManagerHelp.html';
       title = '📦 Purchase Manager Help';
       break;
     case 'INVENTORY_MANAGER':
-      htmlFile = 'inventoryManagerHelp.html';
+      htmlFile = 'ui/inventoryManagerHelp.html';
       title = '📥 Inventory Manager Help';
       break;
     case 'SUPER_USER':
-      htmlFile = 'superUserHelp.html';
+      htmlFile = 'ui/superUserHelp.html';
       title = '📋 System Administrator Help';
       break;
     default:
-      htmlFile = 'helpContent.html';
+      htmlFile = 'ui/helpContent.html';
       title = '❓ System Help';
   }
   
