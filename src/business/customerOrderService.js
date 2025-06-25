@@ -311,26 +311,38 @@ function createCOFromUI(formData) {
 }
 
 /**
- * Gets all available items for dropdown (SKUs + NEW_ITEM option)
- * @returns {Array} Array of item options
+ * Gets all available items from Item Master sheet for dropdown (SKUs + NEW_ITEM option)
+ * @returns {Array} Array of item options with brand info
  */
 function getAvailableItems() {
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  const skuSheet = ss.getSheetByName('SKUClassification');
+  const itemMasterSheet = ss.getSheetByName('Item Master'); // Change this to your actual sheet name
   
-  const items = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)' }];
+  const items = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
   
-  if (skuSheet) {
-    const data = skuSheet.getDataRange().getValues();
+  if (itemMasterSheet) {
+    const data = itemMasterSheet.getDataRange().getValues();
     const headers = data[0];
     const skuCol = headers.indexOf('SKU');
     const nameCol = headers.indexOf('ItemName');
+    const brandCol = headers.indexOf('Brand');
+    
+    // If column names are different, try alternatives
+    const skuIndex = skuCol !== -1 ? skuCol : headers.findIndex(h => String(h).toLowerCase().includes('sku') || String(h).toLowerCase().includes('code'));
+    const nameIndex = nameCol !== -1 ? nameCol : headers.findIndex(h => String(h).toLowerCase().includes('name') || String(h).toLowerCase().includes('item'));
+    const brandIndex = brandCol !== -1 ? brandCol : headers.findIndex(h => String(h).toLowerCase().includes('brand'));
     
     for (let i = 1; i < data.length; i++) {
-      if (data[i][skuCol]) {
+      const sku = data[i][skuIndex];
+      const itemName = data[i][nameIndex];
+      const brand = data[i][brandIndex];
+      
+      if (sku && itemName) {
         items.push({
-          code: data[i][skuCol],
-          name: `${data[i][skuCol]} - ${data[i][nameCol]}`
+          code: String(sku),
+          name: `${sku} - ${itemName}`,
+          brand: String(brand || ''),
+          itemName: String(itemName)
         });
       }
     }

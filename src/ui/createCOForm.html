@@ -110,6 +110,31 @@
       font-weight: bold;
       color: #555;
     }
+    .item-dropdown {
+      position: absolute;
+      background: white;
+      border: 1px solid #ddd;
+      border-top: none;
+      max-height: 200px;
+      overflow-y: auto;
+      width: calc(100% - 2px);
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .item-option {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .item-option:hover {
+      background-color: #f5f5f5;
+    }
+    .item-option.selected {
+      background-color: #e3f2fd;
+    }
+    .form-group {
+      position: relative;
+    }
   </style>
 </head>
 <body>
@@ -167,10 +192,10 @@
       <div class="section-header">Item Information</div>
       
       <div class="form-group">
-        <label for="itemCode">Item: <span class="required">*</span></label>
-        <select id="itemCode" onchange="onItemChange()">
-          <option value="">Select item...</option>
-        </select>
+        <label for="itemSearch">Search Item: <span class="required">*</span></label>
+        <input type="text" id="itemSearch" placeholder="Type SKU or item name..." autocomplete="off" onkeyup="filterItems()" onclick="showAllItems()">
+        <div id="itemDropdown" class="item-dropdown" style="display: none;"></div>
+        <input type="hidden" id="itemCode">
       </div>
       
       <div id="newItemGroup" class="form-group" style="display: none;">
@@ -243,18 +268,103 @@
     
     function onItemsLoaded(items) {
       availableItems = items;
-      
-      // Populate item dropdown
-      const itemSelect = document.getElementById('itemCode');
-      items.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.code;
-        option.textContent = item.name;
-        itemSelect.appendChild(option);
-      });
-      
       checkDataLoaded();
     }
+    
+    function filterItems() {
+      const searchInput = document.getElementById('itemSearch');
+      const dropdown = document.getElementById('itemDropdown');
+      const selectedBrand = document.getElementById('brand').value;
+      const searchTerm = searchInput.value.toLowerCase();
+      
+      if (searchTerm.length < 1) {
+        dropdown.style.display = 'none';
+        return;
+      }
+      
+      // Filter items by brand and search term
+      const filteredItems = availableItems.filter(item => {
+        const matchesBrand = !selectedBrand || item.brand === selectedBrand || item.code === 'NEW_ITEM';
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm) || 
+                             item.code.toLowerCase().includes(searchTerm);
+        return matchesBrand && matchesSearch;
+      });
+      
+      // Show dropdown with filtered results
+      dropdown.innerHTML = '';
+      filteredItems.slice(0, 10).forEach(item => { // Limit to 10 results
+        const option = document.createElement('div');
+        option.className = 'item-option';
+        option.textContent = item.name;
+        option.onclick = () => selectItem(item);
+        dropdown.appendChild(option);
+      });
+      
+      dropdown.style.display = filteredItems.length > 0 ? 'block' : 'none';
+    }
+    
+    function showAllItems() {
+      const searchInput = document.getElementById('itemSearch');
+      const selectedBrand = document.getElementById('brand').value;
+      
+      if (!selectedBrand) {
+        alert('Please select a brand first');
+        return;
+      }
+      
+      // Show all items for selected brand
+      searchInput.value = '';
+      const dropdown = document.getElementById('itemDropdown');
+      
+      const brandItems = availableItems.filter(item => 
+        item.brand === selectedBrand || item.code === 'NEW_ITEM'
+      );
+      
+      dropdown.innerHTML = '';
+      brandItems.slice(0, 20).forEach(item => { // Show first 20 items
+        const option = document.createElement('div');
+        option.className = 'item-option';
+        option.textContent = item.name;
+        option.onclick = () => selectItem(item);
+        dropdown.appendChild(option);
+      });
+      
+      dropdown.style.display = 'block';
+    }
+    
+    function selectItem(item) {
+      const searchInput = document.getElementById('itemSearch');
+      const dropdown = document.getElementById('itemDropdown');
+      const itemCodeInput = document.getElementById('itemCode');
+      const newItemGroup = document.getElementById('newItemGroup');
+      const itemNameInput = document.getElementById('itemName');
+      
+      searchInput.value = item.name;
+      itemCodeInput.value = item.code;
+      dropdown.style.display = 'none';
+      
+      if (item.code === 'NEW_ITEM') {
+        newItemGroup.style.display = 'block';
+        itemNameInput.required = true;
+        itemNameInput.focus();
+      } else {
+        newItemGroup.style.display = 'none';
+        itemNameInput.required = false;
+        itemNameInput.value = '';
+      }
+      
+      updateCreateButtonState();
+    }
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const dropdown = document.getElementById('itemDropdown');
+      const searchInput = document.getElementById('itemSearch');
+      
+      if (event.target !== searchInput && event.target !== dropdown) {
+        dropdown.style.display = 'none';
+      }
+    });
     
     function checkDataLoaded() {
       if (outletBrands && availableItems.length > 0) {
@@ -403,9 +513,11 @@
       document.getElementById('customerEmail').value = '';
       document.getElementById('customerPhone').value = '';
       document.getElementById('customerPIC').value = '';
+      document.getElementById('itemSearch').value = '';
       document.getElementById('itemCode').value = '';
       document.getElementById('itemName').value = '';
       document.getElementById('newItemGroup').style.display = 'none';
+      document.getElementById('itemDropdown').style.display = 'none';
       document.getElementById('quantity').value = '';
       document.getElementById('notes').value = '';
       updateCreateButtonState();
