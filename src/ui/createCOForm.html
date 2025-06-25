@@ -1,3 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #1976d2;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 60px;
+      resize: vertical;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+    .btn {
+      background-color: #1976d2;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #1565c0;
+    }
+    .btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    .error {
+      color: #d32f2f;
+      background-color: #ffebee;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .success {
+      color: #2e7d32;
+      background-color: #e8f5e8;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .co-number {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .required {
+      color: #d32f2f;
+    }
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+    .form-row .form-group {
+      flex: 1;
+    }
+    .section-header {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 20px 0 10px 0;
+      font-weight: bold;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Customer Order</h2>
+    
+    <div id="loading" class="loading">Loading data...</div>
+    
+    <div id="form" style="display: none;">
+      <div id="error" class="error" style="display: none;"></div>
+      <div id="success" class="success" style="display: none;"></div>
+      
+      <div class="section-header">Order Information</div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="outletName">Outlet: <span class="required">*</span></label>
+          <select id="outletName" onchange="onOutletChange()">
+            <option value="">Select outlet...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="brand">Brand: <span class="required">*</span></label>
+          <select id="brand" disabled onchange="updateCreateButtonState()">
+            <option value="">Select brand...</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="section-header">Customer Information</div>
+      
+      <div class="form-group">
+        <label for="customerName">Customer Name: <span class="required">*</span></label>
+        <input type="text" id="customerName" placeholder="Enter customer full name" onchange="updateCreateButtonState()">
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="customerEmail">Customer Email:</label>
+          <input type="email" id="customerEmail" placeholder="customer@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="customerPhone">Customer Phone:</label>
+          <input type="tel" id="customerPhone" placeholder="+91 9876543210">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="customerPIC">Customer PIC:</label>
+        <input type="text" id="customerPIC" placeholder="Personal Identification Code">
+      </div>
+      
+      <div class="section-header">Item Information</div>
+      
+      <div class="form-group">
+        <label for="itemCode">Item: <span class="required">*</span></label>
+        <select id="itemCode" onchange="onItemChange()">
+          <option value="">Select item...</option>
+        </select>
+      </div>
+      
+      <div id="newItemGroup" class="form-group" style="display: none;">
+        <label for="itemName">Item Name: <span class="required">*</span></label>
+        <input type="text" id="itemName" placeholder="Enter new item name" onchange="updateCreateButtonState()">
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="quantity">Quantity: <span class="required">*</span></label>
+          <input type="number" id="quantity" min="1" placeholder="Enter quantity" onchange="updateCreateButtonState()">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="notes">Notes:</label>
+        <textarea id="notes" placeholder="Any special instructions or notes..."></textarea>
+      </div>
+      
+      <button id="createBtn" class="btn" onclick="createCOFromUIHandler()" disabled>
+        Create Customer Order
+      </button>
+      
+      <div id="coNumber" class="co-number" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script>
+    let outletBrands = {};
+    let availableItems = [];
+    
+    // Load data when page loads
+    window.onload = function() {
+      loadFormData();
+    };
+    
+    function loadFormData() {
+      // Load outlets and brands
+      google.script.run
+        .withSuccessHandler(onOutletDataLoaded)
+        .withFailureHandler(onError)
+        .getOutletAndBrandData();
+      
+      // Load available items
+      google.script.run
+        .withSuccessHandler(onItemsLoaded)
+        .withFailureHandler(onError)
+        .getAvailableItems();
+    }
+    
+    function onOutletDataLoaded(data) {
+      if (data.error) {
+        showError(data.error);
+        return;
+      }
+      
+      outletBrands = data.outletBrands;
+      
+      // Populate outlet dropdown
+      const outletSelect = document.getElementById('outletName');
+      data.outlets.forEach(outlet => {
+        const option = document.createElement('option');
+        option.value = outlet;
+        option.textContent = outlet;
+        outletSelect.appendChild(option);
+      });
+      
+      checkDataLoaded();
+    }
+    
+    function onItemsLoaded(items) {
+      availableItems = items;
+      
+      // Populate item dropdown
+      const itemSelect = document.getElementById('itemCode');
+      items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.code;
+        option.textContent = item.name;
+        itemSelect.appendChild(option);
+      });
+      
+      checkDataLoaded();
+    }
+    
+    function checkDataLoaded() {
+      if (outletBrands && availableItems.length > 0) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('form').style.display = 'block';
+      }
+    }
+    
+    function onError(error) {
+      document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + error.message + '</div>';
+    }
+    
+    function onOutletChange() {
+      const outletSelect = document.getElementById('outletName');
+      const brandSelect = document.getElementById('brand');
+      const selectedOutlet = outletSelect.value;
+      
+      // Clear brand dropdown
+      brandSelect.innerHTML = '<option value="">Select brand...</option>';
+      brandSelect.disabled = true;
+      
+      if (selectedOutlet && outletBrands[selectedOutlet]) {
+        outletBrands[selectedOutlet].forEach(brand => {
+          const option = document.createElement('option');
+          option.value = brand;
+          option.textContent = brand;
+          brandSelect.appendChild(option);
+        });
+        brandSelect.disabled = false;
+      }
+      
+      updateCreateButtonState();
+    }
+    
+    function onItemChange() {
+      const itemSelect = document.getElementById('itemCode');
+      const newItemGroup = document.getElementById('newItemGroup');
+      const itemNameInput = document.getElementById('itemName');
+      
+      if (itemSelect.value === 'NEW_ITEM') {
+        newItemGroup.style.display = 'block';
+        itemNameInput.required = true;
+      } else {
+        newItemGroup.style.display = 'none';
+        itemNameInput.required = false;
+        itemNameInput.value = '';
+      }
+      
+      updateCreateButtonState();
+    }
+    
+    function updateCreateButtonState() {
+      const outletName = document.getElementById('outletName').value;
+      const brand = document.getElementById('brand').value;
+      const customerName = document.getElementById('customerName').value.trim();
+      const itemCode = document.getElementById('itemCode').value;
+      const itemName = document.getElementById('itemName').value.trim();
+      const quantity = document.getElementById('quantity').value;
+      const createBtn = document.getElementById('createBtn');
+      
+      const isNewItem = itemCode === 'NEW_ITEM';
+      const hasItemName = !isNewItem || itemName;
+      
+      createBtn.disabled = !(outletName && brand && customerName && itemCode && hasItemName && quantity && parseInt(quantity) > 0);
+    }
+    
+    // Add event listeners for form validation
+    document.getElementById('customerName').addEventListener('input', updateCreateButtonState);
+    document.getElementById('itemName').addEventListener('input', updateCreateButtonState);
+    document.getElementById('quantity').addEventListener('input', updateCreateButtonState);
+    
+    function createCOFromUIHandler() {
+      const formData = {
+        outletName: document.getElementById('outletName').value,
+        brand: document.getElementById('brand').value,
+        customerName: document.getElementById('customerName').value.trim(),
+        customerEmail: document.getElementById('customerEmail').value.trim(),
+        customerPhone: document.getElementById('customerPhone').value.trim(),
+        customerPIC: document.getElementById('customerPIC').value.trim(),
+        itemCode: document.getElementById('itemCode').value,
+        itemName: document.getElementById('itemName').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        notes: document.getElementById('notes').value.trim()
+      };
+      
+      const createBtn = document.getElementById('createBtn');
+      const errorDiv = document.getElementById('error');
+      const successDiv = document.getElementById('success');
+      const coNumberDiv = document.getElementById('coNumber');
+      
+      // Validation
+      if (!formData.outletName || !formData.brand || !formData.customerName || !formData.itemCode || !formData.quantity) {
+        showError('Please fill in all required fields.');
+        return;
+      }
+      
+      if (formData.itemCode === 'NEW_ITEM' && !formData.itemName) {
+        showError('Please enter item name for new item.');
+        return;
+      }
+      
+      // Clear previous messages
+      errorDiv.style.display = 'none';
+      successDiv.style.display = 'none';
+      coNumberDiv.style.display = 'none';
+      
+      // Disable button and show loading
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating Customer Order...';
+      
+      google.script.run
+        .withSuccessHandler(onCOCreated)
+        .withFailureHandler(onCOCreateError)
+        .createCOFromUI(formData);
+    }
+    
+    function onCOCreated(result) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Customer Order';
+      
+      if (result.success) {
+        showSuccess(result.message);
+        document.getElementById('coNumber').innerHTML = 'CO Number: ' + result.coNumber;
+        document.getElementById('coNumber').style.display = 'block';
+        
+        // Reset form
+        resetForm();
+      } else {
+        showError(result.message);
+      }
+    }
+    
+    function onCOCreateError(error) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Customer Order';
+      showError('Error creating customer order: ' + error.message);
+    }
+    
+    function resetForm() {
+      document.getElementById('outletName').value = '';
+      document.getElementById('brand').innerHTML = '<option value="">Select brand...</option>';
+      document.getElementById('brand').disabled = true;
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerEmail').value = '';
       document.getElementById('customerPhone').value = '';
       document.getElementById('customerPIC').value = '';
       document.getElementById('itemCode').value = '';
