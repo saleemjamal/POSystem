@@ -21,7 +21,7 @@ const USER_ROLES = {
     description: 'GRN creation and inventory management'
   },
   STORE_MANAGER: {
-    emails: ['storemanager@poppatjamals.com'],
+    emails: ['adyarstore@poppatjamals.com'],
     permissions: ['CREATE_CO', 'VIEW_OWN_COS', 'EDIT_CUSTOMER_DATA'],
     description: 'Customer order management'
   }
