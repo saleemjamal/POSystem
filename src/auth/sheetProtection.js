@@ -55,13 +55,13 @@ function setupSheetProtections() {
  * @returns {boolean}
  */
 function isVendorEditableSheet(sheetName) {
-  const vendorEditableSheets = ['Vendor_Details', 'Brand_Outlet_Distributor'];
+  const vendorEditableSheets = ['Vendor_Details', 'Brand_Outlet_Distributor', 'SKUClassification'];
   return vendorEditableSheets.includes(sheetName);
 }
 
 /**
  * Set up protection for vendor-editable sheets
- * Allows super users + purchase manager + inventory manager
+ * Allows super users + purchase manager + inventory manager + store manager
  * @param {Sheet} sheet
  */
 function setupVendorEditableProtection(sheet) {
@@ -77,7 +77,8 @@ function setupVendorEditableProtection(sheet) {
     const authorizedEditors = [
       ...getUsersForRole('SUPER_USER'),
       ...getUsersForRole('PURCHASE_MANAGER'),
-      ...getUsersForRole('INVENTORY_MANAGER')
+      ...getUsersForRole('INVENTORY_MANAGER'),
+      ...getUsersForRole('STORE_MANAGER')
     ];
     
     // Add editors one by one (more reliable than batch)
