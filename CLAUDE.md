@@ -172,6 +172,28 @@ This is a comprehensive **Procurement Management System** for **Poppat Jamals**,
 - Improved distributor lookup
 - Store manager role implementation
 
+## Known Issues & Troubleshooting
+
+### Data Consistency Issues
+
+#### Outlet Name Discrepancies
+- **Problem**: Some outlet names in the data have inconsistent spacing (e.g., "POPPAT JAMAL & SONS  MOUNT ROAD" with double spaces)
+- **Symptoms**: "Cannot read properties of undefined (reading 'toString')" errors in customer order creation
+- **Root Cause**: The `outletShort` mapping in `constants.js` handles both single and double space versions, but some functions don't properly normalize outlet names before processing
+- **Solution**: Always normalize outlet names using `.replace(/\s+/g, ' ').trim()` before lookups or processing
+- **Location**: Affects customer order creation, distributor lookups, and CO number generation
+- **Fixed In**: Lines 48, 125 in `customerOrderService.js` where outlet name normalization is applied
+
+#### Brand Name Processing
+- **Problem**: Brand names with spaces can cause undefined parameter errors
+- **Symptoms**: Similar "Cannot read properties of undefined" errors when processing brand names
+- **Solution**: Always validate brand parameters before string operations and use defensive programming
+
+### Prevention
+- When reading outlet/brand data from sheets, apply normalization consistently
+- Add parameter validation to functions that process outlet/brand names
+- Use defensive programming with null/undefined checks before calling string methods
+
 ## Support & Maintenance
 - Super users handle system administration
 - Regular testing via test suites
