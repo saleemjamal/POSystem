@@ -1,71 +1,135 @@
-    customerPhone: '+91 9876543210',
-    customerPIC: 'ABCD1234',
-    itemCode: 'NEW_ITEM',
-    itemName: 'Test Customer Item',
-    quantity: 2,
-    notes: 'Test customer order - urgent delivery needed'
-  };
-  
-  const result = createCustomerOrder(testOrderData);
-  
-  if (result.success) {
+// setupCustomerOrders.js
+// One-time setup script for Customer Orders system
+
+/**
+ * One-time setup function to create CustomerOrders and CustomerMaster sheets
+ * Run this once to initialize the customer order system
+ */
+function setupCustomerOrderSystem() {
+  try {
+    const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+    
+    // Create CustomerOrders sheet
+    const coSheet = getOrCreateCustomerOrdersSheet(ss);
+    debugLog('CustomerOrders sheet created/verified');
+    
+    // Create CustomerMaster sheet  
+    const customerSheet = getOrCreateCustomerMasterSheet(ss);
+    debugLog('CustomerMaster sheet created/verified');
+    
+    // Update sheet protection for new role
+    if (isSuperUser()) {
+      setupCustomerOrderProtections();
+      debugLog('Customer order sheet protections applied');
+    }
+    
     SpreadsheetApp.getActiveSpreadsheet().toast(
-      `Test customer order created: ${result.coNumber}`, 
-      'Test Order Created', 
-      5
+      'Customer Order system is ready! Store managers can now create customer orders.', 
+      'Setup Complete', 
+      8
     );
-  } else {
-    SpreadsheetApp.getUi().alert('Test Failed', result.message, SpreadsheetApp.getUi().ButtonSet.OK);
+    
+    return {
+      success: true,
+      message: 'Customer Order system setup completed successfully'
+    };
+    
+  } catch (error) {
+    debugLog(`Error setting up customer order system: ${error.message}`);
+    SpreadsheetApp.getUi().alert('Setup Error', `Failed to setup customer order system: ${error.message}`, SpreadsheetApp.getUi().ButtonSet.OK);
+    
+    return {
+      success: false,
+      message: `Setup failed: ${error.message}`
+    };
   }
 }
 
 /**
- * Clean up test customer order data
+ * Apply appropriate sheet protection for customer order sheets
  */
-function cleanupTestCustomerOrders() {
-  if (!isSuperUser()) {
-    SpreadsheetApp.getUi().alert('Access Denied', 'Only super users can cleanup test data.', SpreadsheetApp.getUi().ButtonSet.OK);
-    return;
-  }
-  
+function setupCustomerOrderProtections() {
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  let removedCount = 0;
   
-  // Remove test customer orders
+  // CustomerOrders sheet: Store managers can create, admins can edit all
   const coSheet = ss.getSheetByName('CustomerOrders');
   if (coSheet) {
-    const data = coSheet.getDataRange().getValues();
-    const headers = data[0];
-    const customerCol = headers.indexOf('CustomerName');
-    
-    // Remove rows with test customer names (from bottom to top)
-    for (let i = data.length - 1; i >= 1; i--) {
-      if (String(data[i][customerCol]).includes('Test') || String(data[i][customerCol]).includes('John Doe')) {
-        coSheet.deleteRow(i + 1);
-        removedCount++;
-      }
-    }
+    setupCustomerOrdersProtection(coSheet);
   }
   
-  // Remove test customers from CustomerMaster
+  // CustomerMaster sheet: Store managers can edit customer data, admins full access
   const customerSheet = ss.getSheetByName('CustomerMaster');
   if (customerSheet) {
-    const data = customerSheet.getDataRange().getValues();
-    const headers = data[0];
-    const nameCol = headers.indexOf('CustomerName');
-    
-    // Remove rows with test customer names (from bottom to top)
-    for (let i = data.length - 1; i >= 1; i--) {
-      if (String(data[i][nameCol]).includes('Test') || String(data[i][nameCol]).includes('John Doe')) {
-        customerSheet.deleteRow(i + 1);
-        removedCount++;
-      }
-    }
+    setupCustomerMasterProtection(customerSheet);
   }
-  
-  SpreadsheetApp.getActiveSpreadsheet().toast(
-    `Cleaned up ${removedCount} test records`, 
-    'Cleanup Complete', 
-    3
-  );
+}
+
+/**
+ * Set up protection for CustomerOrders sheet
+ * @param {Sheet} sheet
+ */
+function setupCustomerOrdersProtection(sheet) {
+  try {
+    // Remove existing protections
+    sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(p => p.remove());
+    
+    // Create new protection
+    const protection = sheet.protect();
+    protection.setDescription(`Customer Orders - Store managers can create, admins manage`);
+    
+    // Add authorized editors (admins + store managers)
+    const authorizedEditors = [
+      ...getUsersForRole('SUPER_USER'),
+      ...getUsersForRole('STORE_MANAGER')
+    ];
+    
+    authorizedEditors.forEach(email => {
+      try {
+        protection.addEditor(email);
+      } catch (error) {
+        debugLog(`Could not add editor ${email} to CustomerOrders: ${error.message}`);
+      }
+    });
+    
+    protection.setWarningOnly(false);
+    debugLog('CustomerOrders sheet protection applied');
+    
+  } catch (error) {
+    debugLog(`Error protecting CustomerOrders sheet: ${error.message}`);
+  }
+}
+
+/**
+ * Set up protection for CustomerMaster sheet
+ * @param {Sheet} sheet
+ */
+function setupCustomerMasterProtection(sheet) {
+  try {
+    // Remove existing protections
+    sheet.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(p => p.remove());
+    
+    // Create new protection
+    const protection = sheet.protect();
+    protection.setDescription(`Customer Master - Store managers can edit, admins manage`);
+    
+    // Add authorized editors (admins + store managers)
+    const authorizedEditors = [
+      ...getUsersForRole('SUPER_USER'),
+      ...getUsersForRole('STORE_MANAGER')
+    ];
+    
+    authorizedEditors.forEach(email => {
+      try {
+        protection.addEditor(email);
+      } catch (error) {
+        debugLog(`Could not add editor ${email} to CustomerMaster: ${error.message}`);
+      }
+    });
+    
+    protection.setWarningOnly(false);
+    debugLog('CustomerMaster sheet protection applied');
+    
+  } catch (error) {
+    debugLog(`Error protecting CustomerMaster sheet: ${error.message}`);
+  }
 }
