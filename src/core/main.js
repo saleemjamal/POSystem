@@ -18,6 +18,9 @@ function onOpen() {
     case 'INVENTORY_MANAGER':
       createInventoryManagerMenu(ui);
       break;
+    case 'STORE_MANAGER':
+      createStoreManagerMenu(ui);
+      break;
     default:
       createNoAccessMenu(ui);
   }
@@ -36,6 +39,11 @@ function createSuperUserMenu(ui) {
       .addItem('🚀 Generate Multiple POs', 'generatePOsFromBatch')
       .addItem('➕ Create Single PO', 'showCreatePODialog')
       .addItem('📧 Send Approved POs', 'sendApprovedPOs'))
+    .addSeparator()
+    .addSubMenu(ui.createMenu('👥 Customer Orders')
+      .addItem('➕ Create Customer Order', 'showCreateCODialog')
+      .addItem('📋 Review Customer Orders', 'showCustomerOrdersList')
+      .addItem('✅ Approve Orders', 'showApproveOrdersDialog'))
     .addSeparator()
     .addItem('📥 Record Goods Receipt', 'showCreateGRNDialog')
     .addSeparator()
@@ -68,6 +76,19 @@ function createPurchaseManagerMenu(ui) {
 function createInventoryManagerMenu(ui) {
   ui.createMenu('📥 Inventory')
     .addItem('📝 Record Goods Receipt', 'secureShowCreateGRNDialog')
+    .addSeparator()
+    .addItem('👤 My Access Level', 'showCurrentUserInfo')
+    .addItem('❓ Help & Support', 'showHelpDialog')
+    .addToUi();
+}
+
+/**
+ * Creates menu for store managers
+ */
+function createStoreManagerMenu(ui) {
+  ui.createMenu('👥 Customer Orders')
+    .addItem('➕ Create Customer Order', 'secureShowCreateCODialog')
+    .addItem('📋 My Orders', 'showMyCustomerOrders')
     .addSeparator()
     .addItem('👤 My Access Level', 'showCurrentUserInfo')
     .addItem('❓ Help & Support', 'showHelpDialog')
@@ -280,6 +301,10 @@ function showHelpDialog() {
       htmlFile = 'ui/inventoryManagerHelp.html';
       title = '📥 Inventory Manager Help';
       break;
+    case 'STORE_MANAGER':
+      htmlFile = 'ui/storeManagerHelp.html';
+      title = '👥 Store Manager Help';
+      break;
     case 'SUPER_USER':
       htmlFile = 'ui/superUserHelp.html';
       title = '📋 System Administrator Help';
@@ -293,5 +318,48 @@ function showHelpDialog() {
     .setWidth(950)
     .setHeight(750);
   SpreadsheetApp.getUi().showModalDialog(html, title);
-} 
+}
+
+/**
+ * Secure wrapper for showCreateCODialog
+ */
+function secureShowCreateCODialog() {
+  if (validateUserPermission('CREATE_CO')) {
+    showCreateCODialog();
+  }
+}
+
+/**
+ * Shows the Create Customer Order dialog/sidebar
+ */
+function showCreateCODialog() {
+  const html = HtmlService.createHtmlOutputFromFile('ui/createCOForm.html')
+    .setTitle('➕ Create Customer Order')
+    .setWidth(450);
+  SpreadsheetApp.getUi().showSidebar(html);
+}
+
+/**
+ * Shows Customer Orders list (for admins)
+ */
+function showCustomerOrdersList() {
+  const ui = SpreadsheetApp.getUi();
+  ui.alert('Customer Orders', 'Please check the CustomerOrders sheet to review all orders.', ui.ButtonSet.OK);
+}
+
+/**
+ * Shows approve orders dialog (placeholder for now)
+ */
+function showApproveOrdersDialog() {
+  const ui = SpreadsheetApp.getUi();
+  ui.alert('Approve Orders', 'Order approval functionality coming soon. For now, manually update Status in CustomerOrders sheet.', ui.ButtonSet.OK);
+}
+
+/**
+ * Shows store manager's own orders (filtered view)
+ */
+function showMyCustomerOrders() {
+  const ui = SpreadsheetApp.getUi();
+  ui.alert('My Orders', 'Please check the CustomerOrders sheet to view your orders.', ui.ButtonSet.OK);
+}
 

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #9c27b0;
+      margin-top: 0;
+      text-align: center;
+      border-bottom: 2px solid #f3e5f5;
+      padding-bottom: 15px;
+    }
+    h2 {
+      color: #9c27b0;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      border-left: 4px solid #9c27b0;
+      padding-left: 15px;
+    }
+    .emoji {
+      font-size: 1.2em;
+      margin-right: 8px;
+    }
+    .workflow-step {
+      background: #f3e5f5;
+      border-left: 4px solid #9c27b0;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .tip {
+      background: #e8f5e8;
+      border-left: 4px solid #4caf50;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .contact-info {
+      background: #e3f2fd;
+      border: 1px solid #1976d2;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><span class="emoji">👥</span>Store Manager Help Guide</h1>
+    
+    <div class="tip">
+      <strong>Welcome!</strong> As a Store Manager, you can create customer orders when customers request specific items. This guide will help you use the customer order system effectively.
+    </div>
+
+    <h2><span class="emoji">🎯</span>What You Can Do</h2>
+    <ul>
+      <li><strong>Create Customer Orders</strong> for specific customer requests</li>
+      <li><strong>Track Order Status</strong> from creation to delivery</li>
+      <li><strong>Manage Customer Information</strong> for repeat customers</li>
+      <li><strong>Handle Special Requests</strong> including new items not in catalog</li>
+    </ul>
+
+    <h2><span class="emoji">📝</span>Creating a Customer Order</h2>
+    
+    <div class="workflow-step">
+      <h3>Step 1: Access the Form</h3>
+      <p>Click <strong>👥 Customer Orders → ➕ Create Customer Order</strong> from the menu</p>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 2: Fill Order Information</h3>
+      <ul>
+        <li><strong>Outlet:</strong> Select your store location</li>
+        <li><strong>Brand:</strong> Choose the brand (dropdown updates based on outlet)</li>
+      </ul>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 3: Enter Customer Details</h3>
+      <ul>
+        <li><strong>Customer Name:</strong> Full name (required)</li>
+        <li><strong>Email:</strong> For order updates (optional)</li>
+        <li><strong>Phone:</strong> Contact number (optional)</li>
+        <li><strong>PIC:</strong> Personal identification code (optional)</li>
+      </ul>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 4: Select Item</h3>
+      <ul>
+        <li><strong>Item:</strong> Choose from existing catalog OR select "New Item"</li>
+        <li><strong>New Item Name:</strong> If it's not in our catalog, enter the item name</li>
+        <li><strong>Quantity:</strong> How many units the customer wants</li>
+      </ul>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 5: Add Notes (Optional)</h3>
+      <p>Include any special instructions, urgency, or customer preferences</p>
+    </div>
+
+    <div class="workflow-step">
+      <h3>Step 6: Submit</h3>
+      <p>Click "Create Customer Order" - you'll get a CO number for tracking</p>
+    </div>
+
+    <h2><span class="emoji">📊</span>Order Status Tracking</h2>
+    <ul>
+      <li><strong>Pending:</strong> Order created, waiting for admin approval</li>
+      <li><strong>Approved:</strong> Admin approved, converting to purchase order</li>
+      <li><strong>Sent:</strong> Purchase order sent to distributor</li>
+      <li><strong>Received:</strong> Goods received at store</li>
+      <li><strong>Delivered:</strong> Customer has collected/received the order</li>
+    </ul>
+
+    <h2><span class="emoji">💡</span>Best Practices</h2>
+    
+    <div class="tip">
+      <ul>
+        <li><strong>Get complete customer info:</strong> Name and at least one contact method</li>
+        <li><strong>Be specific with new items:</strong> Include brand, model, or detailed description</li>
+        <li><strong>Note urgency:</strong> Use the notes field if customer needs it by a specific date</li>
+        <li><strong>Follow up:</strong> Check order status to keep customers informed</li>
+      </ul>
+    </div>
+
+    <h2><span class="emoji">❓</span>Frequently Asked Questions</h2>
+    
+    <h3>Q: What if the item isn't in our catalog?</h3>
+    <p>Select "New Item" and provide a detailed description. Admin will review and source it.</p>
+
+    <h3>Q: How long does approval take?</h3>
+    <p>Typically within 24 hours during business days. Urgent orders can be flagged in notes.</p>
+
+    <h3>Q: Can I modify an order after creating it?</h3>
+    <p>Contact administrators for changes. It's better to get details right the first time.</p>
+
+    <h3>Q: How do I know when goods arrive?</h3>
+    <p>Check the CustomerOrders sheet or contact administrators for status updates.</p>
+
+    <h2><span class="emoji">🏪</span>Your Store Location</h2>
+    <p>Make sure to always select your correct store location when creating orders, as this determines which distributor will supply the items.</p>
+
+    <div class="contact-info">
+      <h3><span class="emoji">🆘</span>Need Help?</h3>
+      <p><strong>For Technical Issues or Order Questions:</strong></p>
+      <p>📧 <strong>saleem@poppatjamals.com</strong> or <strong>karima@poppatjamals.com</strong></p>
+      <p>They can help with system problems, order status, or any questions about the customer order process.</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
+      <p><em>Thank you for taking great care of our customers! Your attention to their special requests helps build loyalty and satisfaction. 🌟</em></p>
+    </div>
+  </div>
+</body>
+</html>

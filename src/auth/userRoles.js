@@ -19,6 +19,11 @@ const USER_ROLES = {
     emails: ['backoffice@poppatjamals.com'],
     permissions: ['CREATE_GRN', 'EDIT_VENDOR_DATA'],
     description: 'GRN creation and inventory management'
+  },
+  STORE_MANAGER: {
+    emails: ['storemanager@poppatjamals.com'],
+    permissions: ['CREATE_CO', 'VIEW_OWN_COS', 'EDIT_CUSTOMER_DATA'],
+    description: 'Customer order management'
   }
 };
 
@@ -90,6 +95,9 @@ function getFriendlyPermissionName(permission) {
   const friendlyNames = {
     'CREATE_PO': 'Create Purchase Orders',
     'CREATE_GRN': 'Record Goods Receipts',
+    'CREATE_CO': 'Create Customer Orders',
+    'VIEW_OWN_COS': 'View Own Customer Orders',
+    'EDIT_CUSTOMER_DATA': 'Edit Customer Information',
     'EDIT_PO_ARCHIVE': 'Edit Purchase Order Archives',
     'EDIT_VENDOR_DATA': 'Update Vendor Information',
     'SEND_PO': 'Send Purchase Orders',
@@ -108,6 +116,7 @@ function getFriendlyRoleName(role) {
     'SUPER_USER': 'System Administrator',
     'PURCHASE_MANAGER': 'Purchase Manager', 
     'INVENTORY_MANAGER': 'Inventory Manager',
+    'STORE_MANAGER': 'Store Manager',
     'NO_ACCESS': 'No Access Assigned'
   };
   

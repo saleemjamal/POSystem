@@ -1,0 +1,24 @@
+      document.getElementById('customerPhone').value = '';
+      document.getElementById('customerPIC').value = '';
+      document.getElementById('itemCode').value = '';
+      document.getElementById('itemName').value = '';
+      document.getElementById('newItemGroup').style.display = 'none';
+      document.getElementById('quantity').value = '';
+      document.getElementById('notes').value = '';
+      updateCreateButtonState();
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+    
+    function showSuccess(message) {
+      const successDiv = document.getElementById('success');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

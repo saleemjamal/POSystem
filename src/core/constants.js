@@ -125,3 +125,17 @@ const OUTLET_EMAIL_RULES = {
 
   // …add more outlets as needed…
 };
+
+// Customer Order Constants
+const CO_STATUS = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved', 
+  SENT: 'Sent',
+  RECEIVED: 'Received',
+  DELIVERED: 'Delivered'
+};
+
+const CO_ITEM_TYPES = {
+  EXISTING: 'existing',
+  NEW_ITEM: 'new_item'
+};
