@@ -336,5 +336,9 @@ function getAvailableItems() {
     }
   }
   
-  return items.sort((a, b) => a.code.localeCompare(b.code));
+  return items.sort((a, b) => {
+    const codeA = String(a.code || '');
+    const codeB = String(b.code || '');
+    return codeA.localeCompare(codeB);
+  });
 }
