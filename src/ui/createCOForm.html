@@ -184,11 +184,6 @@
         </div>
       </div>
       
-      <div class="form-group">
-        <label for="customerPIC">Customer PIC:</label>
-        <input type="text" id="customerPIC" placeholder="Personal Identification Code">
-      </div>
-      
       <div class="section-header">Item Information</div>
       
       <div class="form-group">
@@ -272,6 +267,8 @@
     }
     
     function filterItems() {
+      if (!availableItems || availableItems.length === 0) return;
+      
       const searchInput = document.getElementById('itemSearch');
       const dropdown = document.getElementById('itemDropdown');
       const selectedBrand = document.getElementById('brand').value;
@@ -304,6 +301,11 @@
     }
     
     function showAllItems() {
+      if (!availableItems || availableItems.length === 0) {
+        alert('Items are still loading, please wait...');
+        return;
+      }
+      
       const searchInput = document.getElementById('itemSearch');
       const selectedBrand = document.getElementById('brand').value;
       
@@ -443,7 +445,6 @@
         customerName: document.getElementById('customerName').value.trim(),
         customerEmail: document.getElementById('customerEmail').value.trim(),
         customerPhone: document.getElementById('customerPhone').value.trim(),
-        customerPIC: document.getElementById('customerPIC').value.trim(),
         itemCode: document.getElementById('itemCode').value,
         itemName: document.getElementById('itemName').value.trim(),
         quantity: parseInt(document.getElementById('quantity').value),
@@ -512,7 +513,6 @@
       document.getElementById('customerName').value = '';
       document.getElementById('customerEmail').value = '';
       document.getElementById('customerPhone').value = '';
-      document.getElementById('customerPIC').value = '';
       document.getElementById('itemSearch').value = '';
       document.getElementById('itemCode').value = '';
       document.getElementById('itemName').value = '';

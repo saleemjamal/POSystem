@@ -152,6 +152,11 @@ function onEdit(e) {
       handleGRNApproval(e);
     }
     
+    // Handle CO approval
+    if (e.source.getActiveSheet().getName() === 'CustomerOrders') {
+      handleCOApproval(e);
+    }
+    
     // Add other onEdit handlers here as needed
     
   } catch (error) {
@@ -335,7 +340,7 @@ function secureShowCreateCODialog() {
 function showCreateCODialog() {
   const html = HtmlService.createHtmlOutputFromFile('ui/createCOForm.html')
     .setTitle('➕ Create Customer Order')
-    .setWidth(450);
+    .setWidth(600);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 

@@ -19,14 +19,18 @@ function createCustomerOrder(orderData) {
     const ss = SpreadsheetApp.openById(MAIN_SS_ID);
     const coSheet = getOrCreateCustomerOrdersSheet(ss);
     
-    // Generate CO number
-    const coNumber = generateCONumber(orderData.outletName);
+    // Generate CO number with brand
+    const coNumber = generateCONumber(orderData.outletName, orderData.brand);
     
     // Get or create customer
     const customer = getOrCreateCustomer(orderData);
     
     // Validate item code
     const itemInfo = validateItemCode(orderData.itemCode, orderData.itemName);
+    
+    // Lookup distributor information
+    const distributorName = lookupDistributor(orderData.brand, orderData.outletName);
+    const distributorEmail = lookupDistributorEmail(distributorName);
     
     // Create CO record
     const coRecord = [
@@ -36,17 +40,18 @@ function createCustomerOrder(orderData) {
       orderData.customerName,
       orderData.customerEmail || '',
       orderData.customerPhone || '',
-      orderData.customerPIC || '',
       orderData.itemCode,
       itemInfo.itemName,
       Number(orderData.quantity),
       CO_STATUS.PENDING,
       new Date(),
-      '', // ApprovedBy
+      false, // Approved checkbox
+      '', // ApprovalType (will be filled when approved)
+      '', // Date Approved (will be filled when approved)
       orderData.notes || '',
-      '', // DistributorName (filled later)
-      '', // DistributorEmail (filled later)
-      '' // Link (filled later)
+      distributorName,
+      distributorEmail,
+      '' // Link (filled later when converted to PO)
     ];
     
     coSheet.appendRow(coRecord);
@@ -68,23 +73,30 @@ function createCustomerOrder(orderData) {
 }
 
 /**
- * Generates sequential CO number in format CO-OUTLET-YYYYMMDD-001
+ * Generates sequential CO number in format CO-OUTLET-BRAND-YYMMDD-001
  * @param {string} outletName
+ * @param {string} brandName
  * @returns {string} CO number
  */
-function generateCONumber(outletName) {
-  const outletCode = outletShort[outletName] || 'UNK';
-  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd');
+function generateCONumber(outletName, brandName) {
+  // Normalize outlet name by removing extra spaces
+  const normalizedOutletName = outletName.replace(/\s+/g, ' ').trim();
+  const outletCode = outletShort[normalizedOutletName] || 'UNK';
+  
+  // Normalize brand name for CO number (remove spaces, limit length)
+  const brandCode = brandName.replace(/\s+/g, '').substring(0, 6).toUpperCase();
+  
+  const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd');
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
   const coSheet = getOrCreateCustomerOrdersSheet(ss);
   
-  // Count existing COs for today
+  // Count existing COs for today with same outlet and brand
   const data = coSheet.getDataRange().getValues();
-  if (data.length <= 1) return `CO-${outletCode}-${today}-001`;
+  if (data.length <= 1) return `CO-${outletCode}-${brandCode}-${today}-001`;
   
   const headers = data[0];
   const coCol = headers.indexOf('CONumber');
-  const prefix = `CO-${outletCode}-${today}`;
+  const prefix = `CO-${outletCode}-${brandCode}-${today}`;
   
   let count = 0;
   for (let i = 1; i < data.length; i++) {
@@ -111,9 +123,9 @@ function getOrCreateCustomerOrdersSheet(ss) {
     // Create headers
     const headers = [
       'CONumber', 'OutletName', 'Brand', 'CustomerName', 
-      'CustomerEmail', 'CustomerPhone', 'CustomerPIC',
+      'CustomerEmail', 'CustomerPhone',
       'ItemCode', 'ItemName', 'Quantity', 'Status',
-      'DateCreated', 'ApprovedBy', 'Notes', 
+      'DateCreated', 'Approved', 'ApprovalType', 'DateApproved', 'Notes',
       'DistributorName', 'DistributorEmail', 'Link'
     ];
     
@@ -182,7 +194,6 @@ function getOrCreateCustomer(customerData) {
     customerData.customerName,
     customerData.customerEmail || '',
     customerData.customerPhone || '',
-    customerData.customerPIC || '',
     customerData.outletName,
     new Date(), // DateFirstOrder
     1, // TotalOrders
@@ -207,7 +218,7 @@ function getOrCreateCustomerMasterSheet(ss) {
     // Headers for Customer Master
     const headers = [
       'CustomerID', 'CustomerName', 'CustomerEmail', 
-      'CustomerPhone', 'CustomerPIC', 'OutletName',
+      'CustomerPhone', 'OutletName',
       'DateFirstOrder', 'TotalOrders', 'LastOrderDate'
     ];
     
@@ -316,7 +327,7 @@ function createCOFromUI(formData) {
  */
 function getAvailableItems() {
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  const itemMasterSheet = ss.getSheetByName('Item Master'); // Change this to your actual sheet name
+  const itemMasterSheet = ss.getSheetByName('ItemMaster'); // Change this to your actual sheet name
   
   const items = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
   

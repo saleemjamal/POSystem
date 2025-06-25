@@ -126,9 +126,12 @@ function setupAllTriggers() {
   // Set up PO closure (weekly)
   setupPOClosureTrigger();
   
+  // Set up CO auto-approval (hourly)
+  setupCOAutoApprovalTrigger();
+  
   debugLog('All automatic triggers set up successfully');
   SpreadsheetApp.getActiveSpreadsheet().toast(
-    'Automation enabled! GRNs auto-approve hourly, POs auto-close weekly.', 
+    'Automation enabled! GRNs and COs auto-approve hourly, POs auto-close weekly.', 
     'System Setup Complete', 
     10
   );

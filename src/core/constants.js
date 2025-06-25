@@ -43,6 +43,7 @@ const MIN_NEW_ITEM_THRESHOLD_DAYS = 75;
 const outletShort = {
         "POPPAT JAMALS ADYAR": "ADY",
         "POPPAT JAMAL & SONS MOUNT ROAD": "MTR",
+        "POPPAT JAMAL & SONS  MOUNT ROAD": "MTR",  // Handle extra space
         "POPPAT JAMALS ANNA NAGAR": "ANN",
         "POPPAT JAMALS COIMBATORE": "CBE",
         "POPPAT JAMALS VIJAYAWADA": "VJW",
