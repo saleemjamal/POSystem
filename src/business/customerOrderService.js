@@ -37,15 +37,19 @@ function createCustomerOrder(orderData) {
     const lineItemsSheet = getOrCreateCOLineItemsSheet(ss);
     
     // Generate CO number with brand
+    //debugLog(`Generating CO number for ${orderData.outletName} - ${orderData.brand}`);
     const coNumber = generateCONumber(orderData.outletName, orderData.brand);
+    debugLog(`CO Number: ${coNumber}`);
     
     // Get or create customer
     const customer = getOrCreateCustomer(orderData);
     
     // Lookup distributor information
-    const distributorName = lookupDistributor(orderData.brand, orderData.outletName);
+    const normalizedOutletName = orderData.outletName.replace(/\s+/g, ' ').trim();
+    const distributorName = lookupDistributor(orderData.brand, normalizedOutletName);
     const distributorEmail = lookupDistributorEmail(distributorName);
-    
+    debugLog(`Distributor Name: ${distributorName}`);
+    debugLog(`Distributor Email: ${distributorEmail}`);
     // Calculate total quantity
     const totalQuantity = orderData.items.reduce((sum, item) => sum + Number(item.quantity), 0);
     
@@ -125,6 +129,7 @@ function generateCONumber(outletName, brandName) {
   
   // Normalize brand name for CO number (remove spaces, limit length)
   const brandCode = brandName.replace(/\s+/g, '').substring(0, 6).toUpperCase();
+  debugLog(`Brand Code: ${brandCode}`);
   
   const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd');
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
@@ -133,6 +138,7 @@ function generateCONumber(outletName, brandName) {
   // Count existing COs for today with same outlet and brand
   const data = coSheet.getDataRange().getValues();
   if (data.length <= 1) return `CO-${outletCode}-${brandCode}-${today}-001`;
+
   
   const headers = data[0];
   const coCol = headers.indexOf('CONumber');
@@ -406,42 +412,83 @@ function createCOFromUI(formData) {
  * @returns {Array} Array of item options with brand info
  */
 function getAvailableItems() {
-  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  const itemMasterSheet = ss.getSheetByName('ItemMaster'); // Change this to your actual sheet name
-  
-  const items = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
-  
-  if (itemMasterSheet) {
-    const data = itemMasterSheet.getDataRange().getValues();
-    const headers = data[0];
-    const skuCol = headers.indexOf('SKU');
-    const nameCol = headers.indexOf('ItemName');
-    const brandCol = headers.indexOf('Brand');
-    
-    // If column names are different, try alternatives
-    const skuIndex = skuCol !== -1 ? skuCol : headers.findIndex(h => String(h).toLowerCase().includes('sku') || String(h).toLowerCase().includes('code'));
-    const nameIndex = nameCol !== -1 ? nameCol : headers.findIndex(h => String(h).toLowerCase().includes('name') || String(h).toLowerCase().includes('item'));
-    const brandIndex = brandCol !== -1 ? brandCol : headers.findIndex(h => String(h).toLowerCase().includes('brand'));
-    
-    for (let i = 1; i < data.length; i++) {
-      const sku = data[i][skuIndex];
-      const itemName = data[i][nameIndex];
-      const brand = data[i][brandIndex];
-      
-      if (sku && itemName) {
-        items.push({
-          code: String(sku),
-          name: `${sku} - ${itemName}`,
-          brand: String(brand || ''),
-          itemName: String(itemName)
-        });
-      }
+  try {
+    const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+    // First try ItemMaster, then SKUClassification as fallback
+    let itemSheet = ss.getSheetByName('ItemMaster');
+    let sheetSource = 'ItemMaster';
+    if (!itemSheet) {
+      itemSheet = ss.getSheetByName('SKUClassification');
+      sheetSource = 'SKUClassification';
     }
+    
+    console.log(`Using sheet: ${sheetSource}`);
+    
+    const items = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
+    
+    if (itemSheet) {
+      const data = itemSheet.getDataRange().getValues();
+      console.log(`Sheet found with ${data.length} rows`);
+      
+      if (data.length < 2) {
+        console.log('Item sheet has no data rows');
+        return items;
+      }
+      
+      const headers = data[0];
+      console.log('Headers found:', headers);
+      
+      // For ItemMaster sheet, use exact column positions based on your screenshot
+      let skuIndex, nameIndex, brandIndex;
+      
+      if (sheetSource === 'ItemMaster') {
+        brandIndex = 0;  // Column A
+        nameIndex = 1;   // Column B  
+        skuIndex = 2;    // Column C
+        console.log('Using ItemMaster column mapping: Brand=0, ItemName=1, SKU=2');
+      } else {
+        // Fallback to dynamic detection for other sheets
+        skuIndex = headers.indexOf('SKU');
+        if (skuIndex === -1) skuIndex = headers.indexOf('ItemCode');
+        if (skuIndex === -1) skuIndex = headers.indexOf('Code');
+        if (skuIndex === -1) skuIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('sku'));
+        
+        nameIndex = headers.indexOf('ItemName');
+        if (nameIndex === -1) nameIndex = headers.indexOf('Item Name');
+        if (nameIndex === -1) nameIndex = headers.indexOf('Item');
+        if (nameIndex === -1) nameIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('name'));
+        
+        brandIndex = headers.indexOf('Brand');
+        if (brandIndex === -1) brandIndex = headers.findIndex(h => h && h.toString().toLowerCase().includes('brand'));
+        
+        console.log(`Dynamic column mapping - SKU: ${skuIndex}, Name: ${nameIndex}, Brand: ${brandIndex}`);
+      }
+      
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const sku = skuIndex >= 0 && row[skuIndex] ? row[skuIndex] : null;
+        const itemName = nameIndex >= 0 && row[nameIndex] ? row[nameIndex] : null;
+        const brand = brandIndex >= 0 && row[brandIndex] ? row[brandIndex] : '';
+        
+        if (sku && itemName) {
+          items.push({
+            code: sku.toString(),
+            name: `${sku} - ${itemName}`,
+            brand: brand.toString(),
+            itemName: itemName.toString()
+          });
+        }
+      }
+      console.log(`Loaded ${items.length - 1} items from ${sheetSource}`);
+    } else {
+      console.log('Neither ItemMaster nor SKUClassification sheet found - only NEW_ITEM option will be available');
+    }
+    
+    return items.sort((a, b) => {
+      return a.code.localeCompare(b.code);
+    });
+  } catch (error) {
+    console.error('Error in getAvailableItems:', error);
+    return [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
   }
-  
-  return items.sort((a, b) => {
-    const codeA = String(a.code || '');
-    const codeB = String(b.code || '');
-    return codeA.localeCompare(codeB);
-  });
 }

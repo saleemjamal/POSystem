@@ -6,14 +6,19 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 10px;
       background-color: #f8f9fa;
+      min-width: 320px;
     }
     .container {
       background: white;
       border-radius: 8px;
-      padding: 20px;
+      padding: 30px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
     }
     h2 {
       color: #1976d2;
@@ -97,10 +102,12 @@
     }
     .form-row {
       display: flex;
-      gap: 10px;
+      gap: 15px;
+      align-items: end;
     }
     .form-row .form-group {
       flex: 1;
+      min-width: 0;
     }
     .section-header {
       background: #f5f5f5;
@@ -115,11 +122,13 @@
       background: white;
       border: 1px solid #ddd;
       border-top: none;
-      max-height: 200px;
+      max-height: 250px;
       overflow-y: auto;
-      width: calc(100% - 2px);
+      width: 100%;
+      left: 0;
       z-index: 1000;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      border-radius: 0 0 4px 4px;
     }
     .item-option {
       padding: 8px 12px;
@@ -177,6 +186,59 @@
     .btn-remove {
       margin-top: 0;
     }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        padding: 5px;
+      }
+      .container {
+        padding: 20px;
+        border-radius: 0;
+      }
+      .form-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .form-row .form-group {
+        flex: none;
+        width: 100%;
+      }
+      .item-row .form-row {
+        flex-direction: column;
+      }
+      .item-row .form-row .form-group[style*="flex: 4"] {
+        flex: none !important;
+        width: 100%;
+        min-width: unset !important;
+      }
+      .item-row .form-row .form-group[style*="flex: 1"] {
+        flex: none !important;
+        width: 100%;
+        min-width: unset !important;
+        max-width: unset !important;
+      }
+      .item-row .form-row .form-group[style*="flex: 0 0 50px"] {
+        flex: none !important;
+        width: auto;
+        align-self: center;
+      }
+    }
+    
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .container {
+        padding: 25px;
+      }
+    }
+    
+    @media (min-width: 1025px) {
+      .container {
+        padding: 30px;
+      }
+      .form-row {
+        gap: 20px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -211,7 +273,7 @@
       
       <div class="form-group">
         <label for="customerName">Customer Name: <span class="required">*</span></label>
-        <input type="text" id="customerName" placeholder="Enter customer full name" onchange="updateCreateButtonState()">
+        <input type="text" id="customerName" placeholder="Enter customer full name" oninput="updateCreateButtonState()">
       </div>
       
       <div class="form-row">
@@ -231,24 +293,24 @@
       <div id="itemsSection">
         <div class="item-row" data-row="0">
           <div class="form-row">
-            <div class="form-group" style="flex: 3;">
+            <div class="form-group" style="flex: 4; min-width: 300px;">
               <label>Search Item: <span class="required">*</span></label>
-              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" onkeyup="filterItems(0)" onclick="showAllItems(0)">
+              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(0)" onclick="showAllItems(0)">
               <div class="item-dropdown" style="display: none;"></div>
               <input type="hidden" class="item-code">
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1; min-width: 80px; max-width: 120px;">
               <label>Qty: <span class="required">*</span></label>
-              <input type="number" class="item-quantity" min="1" placeholder="Qty" onchange="updateCreateButtonState()">
+              <input type="number" class="item-quantity" min="1" placeholder="Qty" oninput="updateCreateButtonState()">
             </div>
-            <div class="form-group" style="flex: 0 0 40px;">
+            <div class="form-group" style="flex: 0 0 50px;">
               <label>&nbsp;</label>
               <button type="button" class="btn-icon btn-remove" onclick="removeItem(0)" style="display: none;">🗑️</button>
             </div>
           </div>
           <div class="new-item-group" style="display: none;">
             <label>Item Name: <span class="required">*</span></label>
-            <input type="text" class="new-item-name" placeholder="Enter new item name" onchange="updateCreateButtonState()">
+            <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()">
           </div>
           <div class="form-group">
             <label>Item Notes:</label>
@@ -258,13 +320,6 @@
       </div>
       
       <button type="button" class="btn-add" onclick="addItem()">+ Add Another Item</button>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="quantity">Quantity: <span class="required">*</span></label>
-          <input type="number" id="quantity" min="1" placeholder="Enter quantity" onchange="updateCreateButtonState()">
-        </div>
-      </div>
       
       <div class="form-group">
         <label for="notes">Notes:</label>
@@ -324,111 +379,15 @@
     }
     
     function onItemsLoaded(items) {
-      availableItems = items;
+      // Handle case where items loading failed
+      if (!items || !Array.isArray(items)) {
+        console.error('Items loading failed or returned invalid data:', items);
+        availableItems = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
+      } else {
+        availableItems = items;
+      }
       checkDataLoaded();
     }
-    
-    function filterItems() {
-      if (!availableItems || availableItems.length === 0) return;
-      
-      const searchInput = document.getElementById('itemSearch');
-      const dropdown = document.getElementById('itemDropdown');
-      const selectedBrand = document.getElementById('brand').value;
-      const searchTerm = searchInput.value.toLowerCase();
-      
-      if (searchTerm.length < 1) {
-        dropdown.style.display = 'none';
-        return;
-      }
-      
-      // Filter items by brand and search term
-      const filteredItems = availableItems.filter(item => {
-        const matchesBrand = !selectedBrand || item.brand === selectedBrand || item.code === 'NEW_ITEM';
-        const matchesSearch = item.name.toLowerCase().includes(searchTerm) || 
-                             item.code.toLowerCase().includes(searchTerm);
-        return matchesBrand && matchesSearch;
-      });
-      
-      // Show dropdown with filtered results
-      dropdown.innerHTML = '';
-      filteredItems.slice(0, 10).forEach(item => { // Limit to 10 results
-        const option = document.createElement('div');
-        option.className = 'item-option';
-        option.textContent = item.name;
-        option.onclick = () => selectItem(item);
-        dropdown.appendChild(option);
-      });
-      
-      dropdown.style.display = filteredItems.length > 0 ? 'block' : 'none';
-    }
-    
-    function showAllItems() {
-      if (!availableItems || availableItems.length === 0) {
-        alert('Items are still loading, please wait...');
-        return;
-      }
-      
-      const searchInput = document.getElementById('itemSearch');
-      const selectedBrand = document.getElementById('brand').value;
-      
-      if (!selectedBrand) {
-        alert('Please select a brand first');
-        return;
-      }
-      
-      // Show all items for selected brand
-      searchInput.value = '';
-      const dropdown = document.getElementById('itemDropdown');
-      
-      const brandItems = availableItems.filter(item => 
-        item.brand === selectedBrand || item.code === 'NEW_ITEM'
-      );
-      
-      dropdown.innerHTML = '';
-      brandItems.slice(0, 20).forEach(item => { // Show first 20 items
-        const option = document.createElement('div');
-        option.className = 'item-option';
-        option.textContent = item.name;
-        option.onclick = () => selectItem(item);
-        dropdown.appendChild(option);
-      });
-      
-      dropdown.style.display = 'block';
-    }
-    
-    function selectItem(item) {
-      const searchInput = document.getElementById('itemSearch');
-      const dropdown = document.getElementById('itemDropdown');
-      const itemCodeInput = document.getElementById('itemCode');
-      const newItemGroup = document.getElementById('newItemGroup');
-      const itemNameInput = document.getElementById('itemName');
-      
-      searchInput.value = item.name;
-      itemCodeInput.value = item.code;
-      dropdown.style.display = 'none';
-      
-      if (item.code === 'NEW_ITEM') {
-        newItemGroup.style.display = 'block';
-        itemNameInput.required = true;
-        itemNameInput.focus();
-      } else {
-        newItemGroup.style.display = 'none';
-        itemNameInput.required = false;
-        itemNameInput.value = '';
-      }
-      
-      updateCreateButtonState();
-    }
-    
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-      const dropdown = document.getElementById('itemDropdown');
-      const searchInput = document.getElementById('itemSearch');
-      
-      if (event.target !== searchInput && event.target !== dropdown) {
-        dropdown.style.display = 'none';
-      }
-    });
     
     function checkDataLoaded() {
       if (outletBrands && availableItems.length > 0) {
@@ -438,7 +397,11 @@
     }
     
     function onError(error) {
-      document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + error.message + '</div>';
+      console.error('Error loading data:', error);
+      document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + (error.message || error) + '<br><br>You can still create orders with new items only.</div>';
+      // Allow form to work with just NEW_ITEM option
+      availableItems = [{ code: 'NEW_ITEM', name: 'New Item (Not in catalog)', brand: '' }];
+      document.getElementById('form').style.display = 'block';
     }
     
     function onOutletChange() {
@@ -463,143 +426,178 @@
       updateCreateButtonState();
     }
     
-    function onItemChange() {
-      const itemSelect = document.getElementById('itemCode');
-      const newItemGroup = document.getElementById('newItemGroup');
-      const itemNameInput = document.getElementById('itemName');
+    // ITEM FUNCTIONS FOR MULTI-ITEM SUPPORT
+    function filterItems(rowIndex) {
+      if (!availableItems || availableItems.length === 0) return;
       
-      if (itemSelect.value === 'NEW_ITEM') {
+      const row = document.querySelector(`.item-row[data-row="${rowIndex}"]`);
+      const searchInput = row.querySelector('.item-search');
+      const dropdown = row.querySelector('.item-dropdown');
+      const selectedBrand = document.getElementById('brand').value;
+      const searchTerm = searchInput.value.toLowerCase();
+      
+      if (searchTerm.length < 1) {
+        dropdown.style.display = 'none';
+        return;
+      }
+      
+      // Filter items by brand and search term
+      const filteredItems = availableItems.filter(item => {
+        const matchesBrand = !selectedBrand || item.brand === selectedBrand || item.code === 'NEW_ITEM';
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm) || 
+                             item.code.toLowerCase().includes(searchTerm);
+        return matchesBrand && matchesSearch;
+      });
+      
+      // Show dropdown with filtered results
+      dropdown.innerHTML = '';
+      filteredItems.slice(0, 10).forEach(item => { // Limit to 10 results
+        const option = document.createElement('div');
+        option.className = 'item-option';
+        option.textContent = item.name;
+        option.onclick = () => selectItem(item, rowIndex);
+        dropdown.appendChild(option);
+      });
+      
+      dropdown.style.display = filteredItems.length > 0 ? 'block' : 'none';
+    }
+    
+    function showAllItems(rowIndex) {
+      if (!availableItems || availableItems.length === 0) {
+        alert('Items are still loading, please wait...');
+        return;
+      }
+      
+      const selectedBrand = document.getElementById('brand').value;
+      
+      if (!selectedBrand) {
+        alert('Please select a brand first');
+        return;
+      }
+      
+      const row = document.querySelector(`.item-row[data-row="${rowIndex}"]`);
+      const searchInput = row.querySelector('.item-search');
+      const dropdown = row.querySelector('.item-dropdown');
+      
+      // Show all items for selected brand
+      searchInput.value = '';
+      
+      const brandItems = availableItems.filter(item => 
+        item.brand === selectedBrand || item.code === 'NEW_ITEM'
+      );
+      
+      dropdown.innerHTML = '';
+      brandItems.slice(0, 20).forEach(item => { // Show first 20 items
+        const option = document.createElement('div');
+        option.className = 'item-option';
+        option.textContent = item.name;
+        option.onclick = () => selectItem(item, rowIndex);
+        dropdown.appendChild(option);
+      });
+      
+      dropdown.style.display = 'block';
+    }
+    
+    function selectItem(item, rowIndex) {
+      const row = document.querySelector(`.item-row[data-row="${rowIndex}"]`);
+      const searchInput = row.querySelector('.item-search');
+      const dropdown = row.querySelector('.item-dropdown');
+      const itemCodeInput = row.querySelector('.item-code');
+      const newItemGroup = row.querySelector('.new-item-group');
+      const itemNameInput = row.querySelector('.new-item-name');
+      
+      searchInput.value = item.name;
+      itemCodeInput.value = item.code;
+      dropdown.style.display = 'none';
+      
+      if (item.code === 'NEW_ITEM') {
         newItemGroup.style.display = 'block';
-        itemNameInput.required = true;
+        itemNameInput.focus();
       } else {
         newItemGroup.style.display = 'none';
-        itemNameInput.required = false;
         itemNameInput.value = '';
       }
       
       updateCreateButtonState();
     }
     
+    function addItem() {
+      const itemsSection = document.getElementById('itemsSection');
+      const newRowIndex = itemRowCount;
+      
+      const newItemRow = document.createElement('div');
+      newItemRow.className = 'item-row';
+      newItemRow.setAttribute('data-row', newRowIndex);
+      newItemRow.innerHTML = `
+        <div class="form-row">
+          <div class="form-group" style="flex: 4; min-width: 300px;">
+            <label>Search Item: <span class="required">*</span></label>
+            <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(${newRowIndex})" onclick="showAllItems(${newRowIndex})">
+            <div class="item-dropdown" style="display: none;"></div>
+            <input type="hidden" class="item-code">
+          </div>
+          <div class="form-group" style="flex: 1; min-width: 80px; max-width: 120px;">
+            <label>Qty: <span class="required">*</span></label>
+            <input type="number" class="item-quantity" min="1" placeholder="Qty" oninput="updateCreateButtonState()">
+          </div>
+          <div class="form-group" style="flex: 0 0 50px;">
+            <label>&nbsp;</label>
+            <button type="button" class="btn-icon btn-remove" onclick="removeItem(${newRowIndex})">🗑️</button>
+          </div>
+        </div>
+        <div class="new-item-group" style="display: none;">
+          <label>Item Name: <span class="required">*</span></label>
+          <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()">
+        </div>
+        <div class="form-group">
+          <label>Item Notes:</label>
+          <input type="text" class="item-notes" placeholder="Special instructions for this item...">
+        </div>
+      `;
+      
+      itemsSection.appendChild(newItemRow);
+      itemRowCount++;
+      
+      // Show remove buttons for all rows except the first one
+      updateRemoveButtons();
+      updateCreateButtonState();
+    }
+    
+    function removeItem(rowIndex) {
+      const row = document.querySelector(`.item-row[data-row="${rowIndex}"]`);
+      if (row) {
+        row.remove();
+        updateRemoveButtons();
+        updateCreateButtonState();
+      }
+    }
+    
+    function updateRemoveButtons() {
+      const itemRows = document.querySelectorAll('.item-row');
+      itemRows.forEach((row, index) => {
+        const removeBtn = row.querySelector('.btn-remove');
+        if (itemRows.length > 1 && index > 0) {
+          removeBtn.style.display = 'block';
+        } else {
+          removeBtn.style.display = 'none';
+        }
+      });
+    }
+    
     function updateCreateButtonState() {
       const outletName = document.getElementById('outletName').value;
       const brand = document.getElementById('brand').value;
       const customerName = document.getElementById('customerName').value.trim();
-      const itemCode = document.getElementById('itemCode').value;
-      const itemName = document.getElementById('itemName').value.trim();
-      const quantity = document.getElementById('quantity').value;
       const createBtn = document.getElementById('createBtn');
       
-      const isNewItem = itemCode === 'NEW_ITEM';
-      const hasItemName = !isNewItem || itemName;
+      let hasValidItem = false;
+      const itemRows = document.querySelectorAll('.item-row');
       
-      createBtn.disabled = !(outletName && brand && customerName && itemCode && hasItemName && quantity && parseInt(quantity) > 0);
-    }
-    
-    // Add event listeners for form validation
-    document.getElementById('customerName').addEventListener('input', updateCreateButtonState);
-    document.getElementById('itemName').addEventListener('input', updateCreateButtonState);
-    document.getElementById('quantity').addEventListener('input', updateCreateButtonState);
-    
-    function createCOFromUIHandler() {
-      const formData = {
-        outletName: document.getElementById('outletName').value,
-        brand: document.getElementById('brand').value,
-        customerName: document.getElementById('customerName').value.trim(),
-        customerEmail: document.getElementById('customerEmail').value.trim(),
-        customerPhone: document.getElementById('customerPhone').value.trim(),
-        itemCode: document.getElementById('itemCode').value,
-        itemName: document.getElementById('itemName').value.trim(),
-        quantity: parseInt(document.getElementById('quantity').value),
-        notes: document.getElementById('notes').value.trim()
-      };
-      
-      const createBtn = document.getElementById('createBtn');
-      const errorDiv = document.getElementById('error');
-      const successDiv = document.getElementById('success');
-      const coNumberDiv = document.getElementById('coNumber');
-      
-      // Validation
-      if (!formData.outletName || !formData.brand || !formData.customerName || !formData.itemCode || !formData.quantity) {
-        showError('Please fill in all required fields.');
-        return;
-      }
-      
-      if (formData.itemCode === 'NEW_ITEM' && !formData.itemName) {
-        showError('Please enter item name for new item.');
-        return;
-      }
-      
-      // Clear previous messages
-      errorDiv.style.display = 'none';
-      successDiv.style.display = 'none';
-      coNumberDiv.style.display = 'none';
-      
-      // Disable button and show loading
-      createBtn.disabled = true;
-      createBtn.textContent = 'Creating Customer Order...';
-      
-      google.script.run
-        .withSuccessHandler(onCOCreated)
-        .withFailureHandler(onCOCreateError)
-        .createCOFromUI(formData);
-    }
-    
-    function onCOCreated(result) {
-      const createBtn = document.getElementById('createBtn');
-      createBtn.disabled = false;
-      createBtn.textContent = 'Create Customer Order';
-      
-      if (result.success) {
-        showSuccess(result.message);
-        document.getElementById('coNumber').innerHTML = 'CO Number: ' + result.coNumber;
-        document.getElementById('coNumber').style.display = 'block';
-        
-        // Reset form
-        resetForm();
-      } else {
-        showError(result.message);
-      }
-    }
-    
-    function onCOCreateError(error) {
-      const createBtn = document.getElementById('createBtn');
-      createBtn.disabled = false;
-      createBtn.textContent = 'Create Customer Order';
-      showError('Error creating customer order: ' + error.message);
-    }
-    
-    function resetForm() {
-      document.getElementById('outletName').value = '';
-      document.getElementById('brand').innerHTML = '<option value="">Select brand...</option>';
-      document.getElementById('brand').disabled = true;
-      document.getElementById('customerName').value = '';
-      document.getElementById('customerEmail').value = '';
-      document.getElementById('customerPhone').value = '';
-      document.getElementById('itemSearch').value = '';
-      document.getElementById('itemCode').value = '';
-      document.getElementById('itemName').value = '';
-      document.getElementById('newItemGroup').style.display = 'none';
-      document.getElementById('itemDropdown').style.display = 'none';
-      document.getElementById('quantity').value = '';
-      document.getElementById('notes').value = '';
-      updateCreateButtonState();
-    }
-    
-    function showError(message) {
-      const errorDiv = document.getElementById('error');
-      errorDiv.textContent = message;
-      errorDiv.style.display = 'block';
-    }
-    
-    function showSuccess(message) {
-      const successDiv = document.getElementById('success');
-      successDiv.textContent = message;
-      successDiv.style.display = 'block';
-    }
-  </script>
-</body>
-</html>
-Name = row.querySelector('.new-item-name').value.trim();
+      for (let i = 0; i < itemRows.length; i++) {
+        const row = itemRows[i];
+        const itemCode = row.querySelector('.item-code').value;
+        const quantity = row.querySelector('.item-quantity').value;
+        const itemName = row.querySelector('.new-item-name').value.trim();
         
         const isNewItem = itemCode === 'NEW_ITEM';
         const hasItemName = !isNewItem || itemName;
@@ -707,24 +705,24 @@ Name = row.querySelector('.new-item-name').value.trim();
       itemsSection.innerHTML = `
         <div class="item-row" data-row="0">
           <div class="form-row">
-            <div class="form-group" style="flex: 3;">
+            <div class="form-group" style="flex: 4; min-width: 300px;">
               <label>Search Item: <span class="required">*</span></label>
-              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" onkeyup="filterItems(0)" onclick="showAllItems(0)">
+              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(0)" onclick="showAllItems(0)">
               <div class="item-dropdown" style="display: none;"></div>
               <input type="hidden" class="item-code">
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1; min-width: 80px; max-width: 120px;">
               <label>Qty: <span class="required">*</span></label>
-              <input type="number" class="item-quantity" min="1" placeholder="Qty" onchange="updateCreateButtonState()">
+              <input type="number" class="item-quantity" min="1" placeholder="Qty" oninput="updateCreateButtonState()">
             </div>
-            <div class="form-group" style="flex: 0 0 40px;">
+            <div class="form-group" style="flex: 0 0 50px;">
               <label>&nbsp;</label>
               <button type="button" class="btn-icon btn-remove" onclick="removeItem(0)" style="display: none;">🗑️</button>
             </div>
           </div>
           <div class="new-item-group" style="display: none;">
             <label>Item Name: <span class="required">*</span></label>
-            <input type="text" class="new-item-name" placeholder="Enter new item name" onchange="updateCreateButtonState()">
+            <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()">
           </div>
           <div class="form-group">
             <label>Item Notes:</label>
@@ -749,20 +747,17 @@ Name = row.querySelector('.new-item-name').value.trim();
       successDiv.style.display = 'block';
     }
     
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('customerName').addEventListener('input', updateCreateButtonState);
-    });
-    
+    // Hide dropdown when clicking outside
     document.addEventListener('click', function(event) {
       const dropdowns = document.querySelectorAll('.item-dropdown');
       const searchInputs = document.querySelectorAll('.item-search');
       
       let clickedInside = false;
       searchInputs.forEach(input => {
-        if (event.target === input) clickedInside = true;
+        if (event.target === input || input.contains(event.target)) clickedInside = true;
       });
       dropdowns.forEach(dropdown => {
-        if (event.target === dropdown) clickedInside = true;
+        if (event.target === dropdown || dropdown.contains(event.target)) clickedInside = true;
       });
       
       if (!clickedInside) {
