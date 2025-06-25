@@ -134,6 +134,48 @@
     }
     .form-group {
       position: relative;
+      margin-bottom: 15px;
+    }
+    .item-row {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #fafafa;
+    }
+    .item-row:first-child {
+      background: white;
+      border-color: #ddd;
+    }
+    .btn-add {
+      background-color: #4caf50;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .btn-add:hover {
+      background-color: #45a049;
+    }
+    .btn-icon {
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 8px;
+      font-size: 14px;
+      width: 36px;
+      height: 36px;
+    }
+    .btn-icon:hover {
+      background: #d32f2f;
+    }
+    .btn-remove {
+      margin-top: 0;
     }
   </style>
 </head>
@@ -186,17 +228,36 @@
       
       <div class="section-header">Item Information</div>
       
-      <div class="form-group">
-        <label for="itemSearch">Search Item: <span class="required">*</span></label>
-        <input type="text" id="itemSearch" placeholder="Type SKU or item name..." autocomplete="off" onkeyup="filterItems()" onclick="showAllItems()">
-        <div id="itemDropdown" class="item-dropdown" style="display: none;"></div>
-        <input type="hidden" id="itemCode">
+      <div id="itemsSection">
+        <div class="item-row" data-row="0">
+          <div class="form-row">
+            <div class="form-group" style="flex: 3;">
+              <label>Search Item: <span class="required">*</span></label>
+              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" onkeyup="filterItems(0)" onclick="showAllItems(0)">
+              <div class="item-dropdown" style="display: none;"></div>
+              <input type="hidden" class="item-code">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Qty: <span class="required">*</span></label>
+              <input type="number" class="item-quantity" min="1" placeholder="Qty" onchange="updateCreateButtonState()">
+            </div>
+            <div class="form-group" style="flex: 0 0 40px;">
+              <label>&nbsp;</label>
+              <button type="button" class="btn-icon btn-remove" onclick="removeItem(0)" style="display: none;">🗑️</button>
+            </div>
+          </div>
+          <div class="new-item-group" style="display: none;">
+            <label>Item Name: <span class="required">*</span></label>
+            <input type="text" class="new-item-name" placeholder="Enter new item name" onchange="updateCreateButtonState()">
+          </div>
+          <div class="form-group">
+            <label>Item Notes:</label>
+            <input type="text" class="item-notes" placeholder="Special instructions for this item...">
+          </div>
+        </div>
       </div>
       
-      <div id="newItemGroup" class="form-group" style="display: none;">
-        <label for="itemName">Item Name: <span class="required">*</span></label>
-        <input type="text" id="itemName" placeholder="Enter new item name" onchange="updateCreateButtonState()">
-      </div>
+      <button type="button" class="btn-add" onclick="addItem()">+ Add Another Item</button>
       
       <div class="form-row">
         <div class="form-group">
@@ -221,6 +282,7 @@
   <script>
     let outletBrands = {};
     let availableItems = [];
+    let itemRowCount = 1;
     
     // Load data when page loads
     window.onload = function() {
@@ -534,6 +596,181 @@
       successDiv.textContent = message;
       successDiv.style.display = 'block';
     }
+  </script>
+</body>
+</html>
+Name = row.querySelector('.new-item-name').value.trim();
+        
+        const isNewItem = itemCode === 'NEW_ITEM';
+        const hasItemName = !isNewItem || itemName;
+        
+        if (itemCode && quantity && parseInt(quantity) > 0 && hasItemName) {
+          hasValidItem = true;
+          break;
+        }
+      }
+      
+      createBtn.disabled = !(outletName && brand && customerName && hasValidItem);
+    }
+    
+    function createCOFromUIHandler() {
+      const items = [];
+      const itemRows = document.querySelectorAll('.item-row');
+      
+      for (let i = 0; i < itemRows.length; i++) {
+        const row = itemRows[i];
+        const itemCode = row.querySelector('.item-code').value;
+        const quantity = parseInt(row.querySelector('.item-quantity').value);
+        const itemName = row.querySelector('.new-item-name').value.trim();
+        const notes = row.querySelector('.item-notes').value.trim();
+        
+        if (itemCode && quantity > 0) {
+          items.push({
+            itemCode: itemCode,
+            itemName: itemName,
+            quantity: quantity,
+            notes: notes
+          });
+        }
+      }
+      
+      if (items.length === 0) {
+        showError('Please add at least one item.');
+        return;
+      }
+      
+      const formData = {
+        outletName: document.getElementById('outletName').value,
+        brand: document.getElementById('brand').value,
+        customerName: document.getElementById('customerName').value.trim(),
+        customerEmail: document.getElementById('customerEmail').value.trim(),
+        customerPhone: document.getElementById('customerPhone').value.trim(),
+        notes: document.getElementById('notes').value.trim(),
+        items: items
+      };
+      
+      const createBtn = document.getElementById('createBtn');
+      const errorDiv = document.getElementById('error');
+      const successDiv = document.getElementById('success');
+      const coNumberDiv = document.getElementById('coNumber');
+      
+      if (!formData.outletName || !formData.brand || !formData.customerName) {
+        showError('Please fill in all required fields.');
+        return;
+      }
+      
+      errorDiv.style.display = 'none';
+      successDiv.style.display = 'none';
+      coNumberDiv.style.display = 'none';
+      
+      createBtn.disabled = true;
+      createBtn.textContent = 'Creating Customer Order...';
+      
+      google.script.run
+        .withSuccessHandler(onCOCreated)
+        .withFailureHandler(onCOCreateError)
+        .createCOFromUI(formData);
+    }
+    
+    function onCOCreated(result) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Customer Order';
+      
+      if (result.success) {
+        showSuccess(result.message);
+        document.getElementById('coNumber').innerHTML = `CO Number: ${result.coNumber}<br>Total Items: ${result.totalItems}`;
+        document.getElementById('coNumber').style.display = 'block';
+        resetForm();
+      } else {
+        showError(result.message);
+      }
+    }
+    
+    function onCOCreateError(error) {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = false;
+      createBtn.textContent = 'Create Customer Order';
+      showError('Error creating customer order: ' + error.message);
+    }
+    
+    function resetForm() {
+      document.getElementById('outletName').value = '';
+      document.getElementById('brand').innerHTML = '<option value="">Select brand...</option>';
+      document.getElementById('brand').disabled = true;
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerEmail').value = '';
+      document.getElementById('customerPhone').value = '';
+      document.getElementById('notes').value = '';
+      
+      const itemsSection = document.getElementById('itemsSection');
+      itemsSection.innerHTML = `
+        <div class="item-row" data-row="0">
+          <div class="form-row">
+            <div class="form-group" style="flex: 3;">
+              <label>Search Item: <span class="required">*</span></label>
+              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" onkeyup="filterItems(0)" onclick="showAllItems(0)">
+              <div class="item-dropdown" style="display: none;"></div>
+              <input type="hidden" class="item-code">
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Qty: <span class="required">*</span></label>
+              <input type="number" class="item-quantity" min="1" placeholder="Qty" onchange="updateCreateButtonState()">
+            </div>
+            <div class="form-group" style="flex: 0 0 40px;">
+              <label>&nbsp;</label>
+              <button type="button" class="btn-icon btn-remove" onclick="removeItem(0)" style="display: none;">🗑️</button>
+            </div>
+          </div>
+          <div class="new-item-group" style="display: none;">
+            <label>Item Name: <span class="required">*</span></label>
+            <input type="text" class="new-item-name" placeholder="Enter new item name" onchange="updateCreateButtonState()">
+          </div>
+          <div class="form-group">
+            <label>Item Notes:</label>
+            <input type="text" class="item-notes" placeholder="Special instructions for this item...">
+          </div>
+        </div>
+      `;
+      
+      itemRowCount = 1;
+      updateCreateButtonState();
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+    
+    function showSuccess(message) {
+      const successDiv = document.getElementById('success');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('customerName').addEventListener('input', updateCreateButtonState);
+    });
+    
+    document.addEventListener('click', function(event) {
+      const dropdowns = document.querySelectorAll('.item-dropdown');
+      const searchInputs = document.querySelectorAll('.item-search');
+      
+      let clickedInside = false;
+      searchInputs.forEach(input => {
+        if (event.target === input) clickedInside = true;
+      });
+      dropdowns.forEach(dropdown => {
+        if (event.target === dropdown) clickedInside = true;
+      });
+      
+      if (!clickedInside) {
+        dropdowns.forEach(dropdown => {
+          dropdown.style.display = 'none';
+        });
+      }
+    });
   </script>
 </body>
 </html>

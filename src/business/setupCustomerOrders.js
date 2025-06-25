@@ -17,6 +17,10 @@ function setupCustomerOrderSystem() {
     const customerSheet = getOrCreateCustomerMasterSheet(ss);
     debugLog('CustomerMaster sheet created/verified');
     
+    // Create COLineItems sheet
+    const lineItemsSheet = getOrCreateCOLineItemsSheet(ss);
+    debugLog('COLineItems sheet created/verified');
+    
     // Update sheet protection for new role
     if (isSuperUser()) {
       setupCustomerOrderProtections();

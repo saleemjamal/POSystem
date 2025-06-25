@@ -9,15 +9,32 @@
 function createCustomerOrder(orderData) {
   try {
     // Validate required fields
-    const required = ['outletName', 'brand', 'customerName', 'itemCode', 'quantity'];
+    const required = ['outletName', 'brand', 'customerName', 'items'];
     for (const field of required) {
       if (!orderData[field]) {
         return { success: false, message: `Missing required field: ${field}` };
       }
     }
 
+    // Validate items array
+    if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+      return { success: false, message: 'At least one item is required' };
+    }
+
+    // Validate each item
+    for (let i = 0; i < orderData.items.length; i++) {
+      const item = orderData.items[i];
+      if (!item.itemCode || !item.quantity || item.quantity <= 0) {
+        return { success: false, message: `Item ${i + 1}: Missing item code or invalid quantity` };
+      }
+      if (item.itemCode === 'NEW_ITEM' && !item.itemName) {
+        return { success: false, message: `Item ${i + 1}: New items must have a name` };
+      }
+    }
+
     const ss = SpreadsheetApp.openById(MAIN_SS_ID);
     const coSheet = getOrCreateCustomerOrdersSheet(ss);
+    const lineItemsSheet = getOrCreateCOLineItemsSheet(ss);
     
     // Generate CO number with brand
     const coNumber = generateCONumber(orderData.outletName, orderData.brand);
@@ -25,14 +42,14 @@ function createCustomerOrder(orderData) {
     // Get or create customer
     const customer = getOrCreateCustomer(orderData);
     
-    // Validate item code
-    const itemInfo = validateItemCode(orderData.itemCode, orderData.itemName);
-    
     // Lookup distributor information
     const distributorName = lookupDistributor(orderData.brand, orderData.outletName);
     const distributorEmail = lookupDistributorEmail(distributorName);
     
-    // Create CO record
+    // Calculate total quantity
+    const totalQuantity = orderData.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+    
+    // Create CO header record
     const coRecord = [
       coNumber,
       orderData.outletName,
@@ -40,9 +57,7 @@ function createCustomerOrder(orderData) {
       orderData.customerName,
       orderData.customerEmail || '',
       orderData.customerPhone || '',
-      orderData.itemCode,
-      itemInfo.itemName,
-      Number(orderData.quantity),
+      totalQuantity, // Total items
       CO_STATUS.PENDING,
       new Date(),
       false, // Approved checkbox
@@ -55,12 +70,37 @@ function createCustomerOrder(orderData) {
     ];
     
     coSheet.appendRow(coRecord);
-    debugLog(`Customer Order created: ${coNumber}`);
+    
+    // Ensure the Approved cell in the new row is a checkbox
+    const lastRow = coSheet.getLastRow();
+    coSheet.getRange(lastRow, 10).setDataValidation(
+      SpreadsheetApp.newDataValidation().requireCheckbox().build()
+    );
+    
+    // Create line items
+    orderData.items.forEach((item, index) => {
+      const itemInfo = validateItemCode(item.itemCode, item.itemName);
+      
+      const lineItemRecord = [
+        coNumber,
+        index + 1, // LineNumber
+        item.itemCode,
+        itemInfo.itemName,
+        Number(item.quantity),
+        itemInfo.isNewItem ? 'new_item' : 'existing',
+        item.notes || ''
+      ];
+      
+      lineItemsSheet.appendRow(lineItemRecord);
+    });
+    
+    debugLog(`Customer Order created: ${coNumber} with ${orderData.items.length} items`);
     
     return {
       success: true,
-      message: `Customer Order ${coNumber} created successfully`,
-      coNumber: coNumber
+      message: `Customer Order ${coNumber} created successfully with ${orderData.items.length} items`,
+      coNumber: coNumber,
+      totalItems: orderData.items.length
     };
     
   } catch (error) {
@@ -123,8 +163,7 @@ function getOrCreateCustomerOrdersSheet(ss) {
     // Create headers
     const headers = [
       'CONumber', 'OutletName', 'Brand', 'CustomerName', 
-      'CustomerEmail', 'CustomerPhone',
-      'ItemCode', 'ItemName', 'Quantity', 'Status',
+      'CustomerEmail', 'CustomerPhone', 'TotalQuantity', 'Status',
       'DateCreated', 'Approved', 'ApprovalType', 'DateApproved', 'Notes',
       'DistributorName', 'DistributorEmail', 'Link'
     ];
@@ -243,6 +282,47 @@ function getOrCreateCustomerMasterSheet(ss) {
   }
   
   return customerSheet;
+}
+
+/**
+ * Gets or creates COLineItems sheet
+ * @param {Spreadsheet} ss
+ * @returns {Sheet} COLineItems sheet
+ */
+function getOrCreateCOLineItemsSheet(ss) {
+  let lineItemsSheet = ss.getSheetByName('COLineItems');
+  
+  if (!lineItemsSheet) {
+    lineItemsSheet = ss.insertSheet('COLineItems');
+    
+    // Create headers
+    const headers = [
+      'CONumber', 'LineNumber', 'ItemCode', 'ItemName', 
+      'Quantity', 'ItemType', 'Notes'
+    ];
+    
+    lineItemsSheet.appendRow(headers);
+    
+    // Format the sheet
+    const headerRange = lineItemsSheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#fff3e0');
+    
+    // Set column widths
+    lineItemsSheet.setColumnWidth(1, 120);  // CONumber
+    lineItemsSheet.setColumnWidth(2, 80);   // LineNumber
+    lineItemsSheet.setColumnWidth(3, 120);  // ItemCode
+    lineItemsSheet.setColumnWidth(4, 250);  // ItemName
+    lineItemsSheet.setColumnWidth(5, 80);   // Quantity
+    lineItemsSheet.setColumnWidth(6, 100);  // ItemType
+    lineItemsSheet.setColumnWidth(7, 200);  // Notes
+    
+    // Set number formats
+    lineItemsSheet.getRange('B:B').setNumberFormat('0'); // LineNumber
+    lineItemsSheet.getRange('E:E').setNumberFormat('0'); // Quantity
+  }
+  
+  return lineItemsSheet;
 }
 
 /**
