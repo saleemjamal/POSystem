@@ -187,6 +187,88 @@
       margin-top: 0;
     }
     
+    /* Grey out other items when adding new item */
+    .item-row.greyed-out {
+      opacity: 0.4;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    
+    .item-row.greyed-out input,
+    .item-row.greyed-out button,
+    .item-row.greyed-out .item-dropdown {
+      pointer-events: none;
+    }
+    
+    /* Toast notification styles */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #4caf50;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 90%;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    
+    .toast-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .toast-header {
+      font-weight: bold;
+      font-size: 15px;
+    }
+    
+    .toast-details {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .toast-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    
+    .toast-copy-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    
+    .toast-copy-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .form-disabled {
+      pointer-events: none;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+    }
+    
     /* Responsive Design */
     @media (max-width: 768px) {
       body {
@@ -295,7 +377,7 @@
           <div class="form-row">
             <div class="form-group" style="flex: 4; min-width: 300px;">
               <label>Search Item: <span class="required">*</span></label>
-              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(0)" onclick="showAllItems(0)">
+              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(0)" onclick="showAllItems(0)" onfocus="greyOutOtherItems(0)" onblur="restoreAllItems()">
               <div class="item-dropdown" style="display: none;"></div>
               <input type="hidden" class="item-code">
             </div>
@@ -310,7 +392,7 @@
           </div>
           <div class="new-item-group" style="display: none;">
             <label>Item Name: <span class="required">*</span></label>
-            <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()">
+            <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()" onfocus="greyOutOtherItems(0)" onblur="restoreAllItems()">
           </div>
           <div class="form-group">
             <label>Item Notes:</label>
@@ -427,6 +509,26 @@
     }
     
     // ITEM FUNCTIONS FOR MULTI-ITEM SUPPORT
+    
+    // Grey out other items when focusing on current item
+    function greyOutOtherItems(activeRowIndex) {
+      const itemRows = document.querySelectorAll('.item-row');
+      itemRows.forEach((row, index) => {
+        const rowIndex = parseInt(row.getAttribute('data-row'));
+        if (rowIndex !== activeRowIndex) {
+          row.classList.add('greyed-out');
+        }
+      });
+    }
+    
+    // Restore all items to normal state
+    function restoreAllItems() {
+      const itemRows = document.querySelectorAll('.item-row');
+      itemRows.forEach(row => {
+        row.classList.remove('greyed-out');
+      });
+    }
+    
     function filterItems(rowIndex) {
       if (!availableItems || availableItems.length === 0) return;
       
@@ -512,10 +614,13 @@
       
       if (item.code === 'NEW_ITEM') {
         newItemGroup.style.display = 'block';
+        // Focus will trigger greyOutOtherItems automatically
         itemNameInput.focus();
       } else {
         newItemGroup.style.display = 'none';
         itemNameInput.value = '';
+        // Item selected, restore other items
+        restoreAllItems();
       }
       
       updateCreateButtonState();
@@ -532,7 +637,7 @@
         <div class="form-row">
           <div class="form-group" style="flex: 4; min-width: 300px;">
             <label>Search Item: <span class="required">*</span></label>
-            <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(${newRowIndex})" onclick="showAllItems(${newRowIndex})">
+            <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(${newRowIndex})" onclick="showAllItems(${newRowIndex})" onfocus="greyOutOtherItems(${newRowIndex})" onblur="restoreAllItems()">
             <div class="item-dropdown" style="display: none;"></div>
             <input type="hidden" class="item-code">
           </div>
@@ -547,7 +652,7 @@
         </div>
         <div class="new-item-group" style="display: none;">
           <label>Item Name: <span class="required">*</span></label>
-          <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()">
+          <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()" onfocus="greyOutOtherItems(${newRowIndex})" onblur="restoreAllItems()">
         </div>
         <div class="form-group">
           <label>Item Notes:</label>
@@ -676,10 +781,20 @@
       createBtn.textContent = 'Create Customer Order';
       
       if (result.success) {
-        showSuccess(result.message);
-        document.getElementById('coNumber').innerHTML = `CO Number: ${result.coNumber}<br>Total Items: ${result.totalItems}`;
-        document.getElementById('coNumber').style.display = 'block';
-        resetForm();
+        // Disable form to prevent accidental interactions
+        document.getElementById('form').classList.add('form-disabled');
+        
+        // Show toast notification
+        showToast({
+          coNumber: result.coNumber,
+          customerName: document.getElementById('customerName').value,
+          totalItems: result.totalItems
+        });
+        
+        // Close sidebar after delay
+        setTimeout(() => {
+          google.script.host.close();
+        }, 2000);
       } else {
         showError(result.message);
       }
@@ -707,7 +822,7 @@
           <div class="form-row">
             <div class="form-group" style="flex: 4; min-width: 300px;">
               <label>Search Item: <span class="required">*</span></label>
-              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(0)" onclick="showAllItems(0)">
+              <input type="text" class="item-search" placeholder="Type SKU or item name..." autocomplete="off" oninput="filterItems(0)" onclick="showAllItems(0)" onfocus="greyOutOtherItems(0)" onblur="restoreAllItems()">
               <div class="item-dropdown" style="display: none;"></div>
               <input type="hidden" class="item-code">
             </div>
@@ -722,7 +837,7 @@
           </div>
           <div class="new-item-group" style="display: none;">
             <label>Item Name: <span class="required">*</span></label>
-            <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()">
+            <input type="text" class="new-item-name" placeholder="Enter new item name" oninput="updateCreateButtonState()" onfocus="greyOutOtherItems(0)" onblur="restoreAllItems()">
           </div>
           <div class="form-group">
             <label>Item Notes:</label>
@@ -747,6 +862,78 @@
       successDiv.style.display = 'block';
     }
     
+    function showToast(orderData) {
+      // Create toast element
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      
+      toast.innerHTML = `
+        <div class="toast-content">
+          <div class="toast-header">Customer Order Created Successfully!</div>
+          <div class="toast-details">
+            Customer: ${orderData.customerName}<br>
+            CO Number: ${orderData.coNumber}<br>
+            Total Items: ${orderData.totalItems}
+          </div>
+          <div class="toast-actions">
+            <button class="toast-copy-btn" onclick="copyToClipboard('${orderData.coNumber}')">
+              Copy CO Number
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(toast);
+      
+      // Show toast with animation
+      setTimeout(() => {
+        toast.classList.add('show');
+      }, 100);
+      
+      // Auto-hide toast after 5 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, 5000);
+    }
+    
+    function copyToClipboard(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          // Show brief feedback
+          const copyBtn = document.querySelector('.toast-copy-btn');
+          if (copyBtn) {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => {
+              copyBtn.textContent = originalText;
+            }, 1000);
+          }
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const copyBtn = document.querySelector('.toast-copy-btn');
+        if (copyBtn) {
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 1000);
+        }
+      }
+    }
+    
     // Hide dropdown when clicking outside
     document.addEventListener('click', function(event) {
       const dropdowns = document.querySelectorAll('.item-dropdown');
@@ -764,6 +951,8 @@
         dropdowns.forEach(dropdown => {
           dropdown.style.display = 'none';
         });
+        // Restore all items when clicking outside dropdowns
+        restoreAllItems();
       }
     });
   </script>

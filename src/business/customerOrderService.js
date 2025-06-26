@@ -355,29 +355,30 @@ function validateItemCode(itemCode, itemName) {
     };
   }
   
-  // Check against SKU master
+  // Check against ItemMaster sheet
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  const skuSheet = ss.getSheetByName('SKUClassification');
+  const itemSheet = ss.getSheetByName('ItemMaster');
   
-  if (!skuSheet) {
+  if (!itemSheet) {
     return {
       isValid: false,
       itemName: itemName || itemCode,
       isNewItem: false,
-      error: 'SKU master not found'
+      error: 'ItemMaster sheet not found'
     };
   }
   
-  const data = skuSheet.getDataRange().getValues();
-  const headers = data[0];
-  const skuCol = headers.indexOf('SKU');
-  const nameCol = headers.indexOf('ItemName');
+  const data = itemSheet.getDataRange().getValues();
+  
+  // ItemMaster columns: Brand=A(0), ItemName=B(1), SKU=C(2)
+  const skuCol = 2;
+  const nameCol = 1;
   
   for (let i = 1; i < data.length; i++) {
-    if (data[i][skuCol] === itemCode) {
+    if (data[i][skuCol] && data[i][skuCol].toString() === itemCode.toString()) {
       return {
         isValid: true,
-        itemName: data[i][nameCol],
+        itemName: data[i][nameCol] || itemCode,
         isNewItem: false
       };
     }
@@ -387,7 +388,7 @@ function validateItemCode(itemCode, itemName) {
     isValid: false,
     itemName: itemName || itemCode,
     isNewItem: false,
-    error: 'Item code not found in SKU master'
+    error: `Item code ${itemCode} not found in ItemMaster`
   };
 }
 
