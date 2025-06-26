@@ -81,6 +81,87 @@ function removeAutoApprovalTrigger() {
 }
 
 /**
+ * Auto-approve Customer Orders that are older than 60 minutes
+ * Run this via time-based trigger every hour
+ */
+function autoApproveOldCOs() {
+  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+  const coSheet = ss.getSheetByName('CustomerOrders');
+  if (!coSheet) return;
+  
+  const data = coSheet.getDataRange().getValues();
+  const headers = data[0];
+  
+  const dateCreatedCol = headers.indexOf('DateCreated');
+  const approvedCol = headers.indexOf('Approved');
+  const dateApprovedCol = headers.indexOf('DateApproved');
+  const approvalTypeCol = headers.indexOf('ApprovalType');
+  
+  const now = new Date();
+  const autoApprovalCutoff = new Date(now.getTime() - (CO_AUTO_APPROVE_MINUTES * 60 * 1000));
+  
+  let autoApprovedCount = 0;
+  
+  for (let i = 1; i < data.length; i++) {
+    const dateCreated = new Date(data[i][dateCreatedCol]);
+    const isApproved = data[i][approvedCol];
+    
+    // Auto-approve if: not already approved AND older than cutoff time
+    if (!isApproved && dateCreated < autoApprovalCutoff) {
+      // Set approved checkbox to true
+      coSheet.getRange(i + 1, approvedCol + 1).setValue(true);
+      // Set approval date
+      coSheet.getRange(i + 1, dateApprovedCol + 1).setValue(now);
+      // Set approval type to Auto
+      coSheet.getRange(i + 1, approvalTypeCol + 1).setValue(CO_APPROVAL_TYPES.AUTO);
+      
+      // Trigger email sending workflow
+      sendCOToDistributor(i + 1, coSheet);
+      
+      autoApprovedCount++;
+      debugLog(`Auto-approved CO: ${data[i][headers.indexOf('CONumber')]}`);
+    }
+  }
+  
+  if (autoApprovedCount > 0) {
+    debugLog(`Auto-approved ${autoApprovedCount} Customer Orders`);
+  }
+}
+
+/**
+ * One-time setup function to create the CO auto-approval trigger
+ * Run this once to set up hourly CO auto-approval
+ */
+function setupCOAutoApprovalTrigger() {
+  // Delete existing triggers for this function (avoid duplicates)
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'autoApproveOldCOs') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  
+  // Create new hourly trigger
+  ScriptApp.newTrigger('autoApproveOldCOs')
+    .timeBased()
+    .everyHours(1) // Run every hour
+    .create();
+    
+  debugLog('CO auto-approval trigger created - runs every hour');
+}
+
+/**
+ * Remove the CO auto-approval trigger (for maintenance or disable)
+ */
+function removeCOAutoApprovalTrigger() {
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'autoApproveOldCOs') {
+      ScriptApp.deleteTrigger(trigger);
+      debugLog('CO auto-approval trigger removed');
+    }
+  });
+}
+
+/**
  * One-time setup function to create the PO closure trigger
  * Run this once to set up weekly PO closure
  */
@@ -129,12 +210,48 @@ function setupAllTriggers() {
   // Set up CO auto-approval (hourly)
   setupCOAutoApprovalTrigger();
   
+  // Set up CO approval email (on edit)
+  setupCOApprovalTrigger();
+  
   debugLog('All automatic triggers set up successfully');
   SpreadsheetApp.getActiveSpreadsheet().toast(
-    'Automation enabled! GRNs and COs auto-approve hourly, POs auto-close weekly.', 
+    'Automation enabled! GRNs and COs auto-approve hourly, POs auto-close weekly, COs email on approval.', 
     'System Setup Complete', 
     10
   );
+}
+
+/**
+ * One-time setup function to create the CO approval trigger
+ * Run this once to set up CO approval email automation
+ */
+function setupCOApprovalTrigger() {
+  // Delete existing triggers for this function (avoid duplicates)
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'processCOApprovals') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  
+  // Create new on-edit trigger
+  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+  ScriptApp.newTrigger('processCOApprovals')
+    .onEdit(ss)
+    .create();
+    
+  debugLog('CO approval trigger created - processes approvals on edit');
+}
+
+/**
+ * Remove the CO approval trigger (for maintenance or disable)
+ */
+function removeCOApprovalTrigger() {
+  ScriptApp.getProjectTriggers().forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'processCOApprovals') {
+      ScriptApp.deleteTrigger(trigger);
+      debugLog('CO approval trigger removed');
+    }
+  });
 }
 
 /**
@@ -143,6 +260,8 @@ function setupAllTriggers() {
 function removeAllTriggers() {
   removeAutoApprovalTrigger();
   removePOClosureTrigger();
+  removeCOAutoApprovalTrigger();
+  removeCOApprovalTrigger();
   
   debugLog('All automatic triggers removed');
   SpreadsheetApp.getActiveSpreadsheet().toast(

@@ -409,6 +409,245 @@ function createCOFromUI(formData) {
 }
 
 /**
+ * Processes approved Customer Orders and sends emails to distributors
+ * Called by installable trigger on sheet edit
+ * @param {Event} e - The edit event
+ */
+function processCOApprovals(e) {
+  try {
+    // Only process if this is the CustomerOrders sheet
+    if (!e || !e.source || e.source.getActiveSheet().getName() !== 'CustomerOrders') {
+      return;
+    }
+    
+    // Only process if the Approved column was changed
+    const editedColumn = e.range.getColumn();
+    const approvedColumn = 10; // Column J (Approved checkbox)
+    
+    if (editedColumn !== approvedColumn) {
+      return;
+    }
+    
+    const sheet = e.source.getActiveSheet();
+    const editedRow = e.range.getRow();
+    
+    // Skip header row
+    if (editedRow === 1) return;
+    
+    // Get the data for this row
+    const rowData = sheet.getRange(editedRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Check if this CO was just approved and hasn't been sent yet
+    const isApproved = rowData[9]; // Column J (Approved)
+    const approvalType = rowData[10]; // Column K (ApprovalType)
+    
+    if (isApproved && !approvalType) {
+      sendCOToDistributor(editedRow, sheet);
+    }
+    
+  } catch (error) {
+    debugLog(`Error in processCOApprovals: ${error.message}`);
+  }
+}
+
+/**
+ * Sends Customer Order email to distributor
+ * @param {number} rowNumber - Row number in CustomerOrders sheet
+ * @param {Sheet} sheet - CustomerOrders sheet
+ */
+function sendCOToDistributor(rowNumber, sheet) {
+  try {
+    const rowData = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Extract CO data
+    const coNumber = rowData[0];
+    const outletName = rowData[1];
+    const brand = rowData[2];
+    const customerName = rowData[3];
+    const distributorName = rowData[13];
+    const distributorEmail = rowData[14];
+    
+    debugLog(`Processing CO approval: ${coNumber} for distributor: ${distributorName}`);
+    
+    if (!distributorEmail) {
+      sheet.getRange(rowNumber, 11).setValue('ERROR: No distributor email');
+      debugLog(`No distributor email found for CO: ${coNumber}`);
+      return;
+    }
+    
+    // Get line items for this CO
+    const lineItems = getCOLineItems(coNumber);
+    
+    // Create PDF with CO details
+    const pdfBlob = createCOPDF(coNumber, outletName, brand, customerName, lineItems);
+    
+    // Send email
+    const emailResult = sendCOEmail(
+      distributorEmail,
+      distributorName,
+      brand,
+      outletName,
+      customerName,
+      coNumber,
+      pdfBlob
+    );
+    
+    if (emailResult === "SUCCESS") {
+      // Update approval details
+      sheet.getRange(rowNumber, 11).setValue('Manual'); // ApprovalType
+      sheet.getRange(rowNumber, 12).setValue(new Date()); // DateApproved
+      debugLog(`CO ${coNumber} sent successfully to ${distributorName}`);
+    } else {
+      sheet.getRange(rowNumber, 11).setValue(`ERROR: ${emailResult}`);
+      debugLog(`Failed to send CO ${coNumber}: ${emailResult}`);
+    }
+    
+  } catch (error) {
+    debugLog(`Error sending CO: ${error.message}`);
+    sheet.getRange(rowNumber, 11).setValue(`ERROR: ${error.message}`);
+  }
+}
+
+/**
+ * Gets line items for a Customer Order
+ * @param {string} coNumber - CO Number
+ * @returns {Array} Array of line items
+ */
+function getCOLineItems(coNumber) {
+  try {
+    const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+    const lineItemsSheet = ss.getSheetByName('COLineItems');
+    
+    if (!lineItemsSheet) {
+      return [];
+    }
+    
+    const data = lineItemsSheet.getDataRange().getValues();
+    const lineItems = [];
+    
+    // Skip header row and find matching CO number
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === coNumber) { // CONumber column
+        lineItems.push({
+          lineNumber: data[i][1],
+          itemCode: data[i][2],
+          itemName: data[i][3],
+          quantity: data[i][4],
+          itemType: data[i][5],
+          notes: data[i][6]
+        });
+      }
+    }
+    
+    return lineItems.sort((a, b) => a.lineNumber - b.lineNumber);
+    
+  } catch (error) {
+    debugLog(`Error getting CO line items: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Creates PDF for Customer Order
+ * @param {string} coNumber - CO Number
+ * @param {string} outletName - Outlet name
+ * @param {string} brand - Brand name
+ * @param {string} customerName - Customer name
+ * @param {Array} lineItems - Array of line items
+ * @returns {Blob} PDF blob
+ */
+function createCOPDF(coNumber, outletName, brand, customerName, lineItems) {
+  try {
+    // Create temporary spreadsheet for PDF generation
+    const tempSS = SpreadsheetApp.create(`CO_PDF_${coNumber}_${Date.now()}`);
+    const sheet = tempSS.getActiveSheet();
+    
+    // Set up header
+    sheet.getRange('A1').setValue('CUSTOMER ORDER');
+    sheet.getRange('A1').setFontSize(16).setFontWeight('bold');
+    
+    // CO details
+    sheet.getRange('A3').setValue('CO Number:').setFontWeight('bold');
+    sheet.getRange('B3').setValue(coNumber);
+    sheet.getRange('A4').setValue('Customer:').setFontWeight('bold');
+    sheet.getRange('B4').setValue(customerName);
+    sheet.getRange('A5').setValue('Brand:').setFontWeight('bold');
+    sheet.getRange('B5').setValue(brand);
+    sheet.getRange('A6').setValue('Outlet:').setFontWeight('bold');
+    sheet.getRange('B6').setValue(outletName);
+    sheet.getRange('A7').setValue('Date:').setFontWeight('bold');
+    sheet.getRange('B7').setValue(new Date());
+    
+    // Line items header
+    const startRow = 9;
+    sheet.getRange(startRow, 1, 1, 5).setValues([['Line', 'Item Code', 'Item Name', 'Quantity', 'Notes']]);
+    sheet.getRange(startRow, 1, 1, 5).setFontWeight('bold').setBackground('#e1f5fe');
+    
+    // Line items data
+    for (let i = 0; i < lineItems.length; i++) {
+      const item = lineItems[i];
+      sheet.getRange(startRow + 1 + i, 1, 1, 5).setValues([[
+        item.lineNumber,
+        item.itemCode,
+        item.itemName,
+        item.quantity,
+        item.notes || ''
+      ]]);
+    }
+    
+    // Auto-resize columns
+    sheet.autoResizeColumns(1, 5);
+    
+    // Convert to PDF
+    const pdfBlob = tempSS.getAs('application/pdf');
+    pdfBlob.setName(`Customer_Order_${coNumber}.pdf`);
+    
+    // Cleanup
+    DriveApp.getFileById(tempSS.getId()).setTrashed(true);
+    
+    return pdfBlob;
+    
+  } catch (error) {
+    debugLog(`Error creating CO PDF: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Sends Customer Order email to distributor
+ * @param {string} email - Distributor email
+ * @param {string} distributor - Distributor name
+ * @param {string} brand - Brand name
+ * @param {string} outlet - Outlet name
+ * @param {string} customerName - Customer name
+ * @param {string} coNumber - CO Number
+ * @param {Blob} pdfBlob - PDF attachment
+ * @returns {string} Success or error message
+ */
+function sendCOEmail(email, distributor, brand, outlet, customerName, coNumber, pdfBlob) {
+  try {
+    const subject = `Customer Order - ${brand} (${outlet})`;
+    const htmlBody = CO_EMAIL_TEMPLATE(distributor, brand, outlet, customerName, coNumber);
+    const rules = OUTLET_EMAIL_RULES[outlet] || {};
+    
+    MailApp.sendEmail({
+      to: email,
+      cc: rules.cc,
+      subject: subject,
+      htmlBody: htmlBody,
+      attachments: [pdfBlob]
+    });
+    
+    debugLog(`SUCCESS: CO Email sent to ${email}`);
+    return "SUCCESS";
+    
+  } catch (err) {
+    debugLog(`ERROR sending CO email to ${email}: ${err.message}`);
+    return `ERROR: ${err.message}`;
+  }
+}
+
+/**
  * Gets all available items from Item Master sheet for dropdown (SKUs + NEW_ITEM option)
  * @returns {Array} Array of item options with brand info
  */
