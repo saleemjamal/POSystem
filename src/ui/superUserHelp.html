@@ -420,14 +420,60 @@
       </ul>
     </div>
 
+    <h2><span class="emoji">👥</span>Customer Order Management</h2>
+    
+    <div class="admin-section">
+      <h3>Customer Order Approval Process</h3>
+      <p>Customer Orders follow a new menu-based approval workflow for reliability:</p>
+      
+      <h4>Auto-Approval (Immediate):</h4>
+      <ul>
+        <li>Orders under ₹10,000 with existing items only</li>
+        <li>Both "Approved" and "Sent" checkboxes marked true</li>
+        <li>Email automatically sent to distributors upon creation</li>
+      </ul>
+      
+      <h4>Manual Approval Required:</h4>
+      <ul>
+        <li>Orders ≥₹10,000 OR containing new items</li>
+        <li>Created with both "Approved" and "Sent" checkboxes false</li>
+        <li>Store managers check "Approved" checkbox in CustomerOrders sheet</li>
+        <li>Use menu: <strong>👥 Customer Orders → 📧 Send Approved COs</strong></li>
+        <li>System sends emails and marks "Sent" checkbox for successful deliveries</li>
+      </ul>
+      
+      <h4>Safety Net - Auto-Approval Timeout:</h4>
+      <ul>
+        <li>Orders auto-approve after 1 hour if still pending</li>
+        <li>Sets "Approved" true and triggers email sending</li>
+        <li>"Sent" checkbox marked only after successful email delivery</li>
+        <li>Prevents urgent orders from getting stuck</li>
+        <li>Runs hourly via automated trigger</li>
+      </ul>
+    </div>
+
+    <div class="tip">
+      <h3>CO Management Best Practices:</h3>
+      <ul>
+        <li><strong>Regular Monitoring:</strong> Check CustomerOrders sheet for Approved=true but Sent=false orders</li>
+        <li><strong>Quick Response:</strong> Process manual approvals within business hours (1-hour auto-timeout)</li>
+        <li><strong>Email Verification:</strong> Confirm distributor emails are current for successful delivery</li>
+        <li><strong>Checkbox Tracking:</strong> Use Sent checkbox to verify email delivery status</li>
+        <li><strong>Cost Price Updates:</strong> Keep ItemMaster cost prices accurate for value calculations</li>
+      </ul>
+    </div>
+
     <h2><span class="emoji">📅</span>Weekly Admin Checklist</h2>
 
     <div class="workflow-phase">
-      <h3>Monday (PO Management Day):</h3>
+      <h3>Monday (PO & CO Management Day):</h3>
       <ul>
         <li>☐ Review weekend automation logs in DebugLog sheet</li>
         <li>☐ Check and approve any pending POs</li>
         <li>☐ Send approved POs to distributors</li>
+        <li>☐ Review pending Customer Orders (Approved=false) and approve as needed</li>
+        <li>☐ Check for approved but unsent orders (Approved=true, Sent=false)</li>
+        <li>☐ Use "📧 Send Approved COs" to process approved customer orders</li>
         <li>☐ Monitor for delivery issues or delays</li>
       </ul>
 

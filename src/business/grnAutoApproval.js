@@ -92,10 +92,26 @@ function autoApproveOldCOs() {
   const data = coSheet.getDataRange().getValues();
   const headers = data[0];
   
-  const dateCreatedCol = headers.indexOf('DateCreated');
-  const approvedCol = headers.indexOf('Approved');
-  const dateApprovedCol = headers.indexOf('DateApproved');
-  const approvalTypeCol = headers.indexOf('ApprovalType');
+  // Build column mapping
+  const columnMap = {};
+  headers.forEach((header, index) => {
+    if (header) columnMap[header] = index;
+  });
+  
+  // Validate required columns exist
+  const requiredColumns = ['DateCreated', 'Approved', 'Sent', 'DateApproved', 'ApprovalType'];
+  const missingColumns = requiredColumns.filter(col => !(col in columnMap));
+  
+  if (missingColumns.length > 0) {
+    debugLog(`ERROR: Missing required columns in CustomerOrders for auto-approval: ${missingColumns.join(', ')}`);
+    return;
+  }
+  
+  const dateCreatedCol = columnMap['DateCreated'];
+  const approvedCol = columnMap['Approved'];
+  const sentCol = columnMap['Sent'];
+  const dateApprovedCol = columnMap['DateApproved'];
+  const approvalTypeCol = columnMap['ApprovalType'];
   
   const now = new Date();
   const autoApprovalCutoff = new Date(now.getTime() - (CO_AUTO_APPROVE_MINUTES * 60 * 1000));
@@ -115,11 +131,11 @@ function autoApproveOldCOs() {
       // Set approval type to Auto
       coSheet.getRange(i + 1, approvalTypeCol + 1).setValue(CO_APPROVAL_TYPES.AUTO);
       
-      // Trigger email sending workflow
+      // Trigger email sending workflow (this will set Sent=true on success)
       sendCOToDistributor(i + 1, coSheet);
       
       autoApprovedCount++;
-      debugLog(`Auto-approved CO: ${data[i][headers.indexOf('CONumber')]}`);
+      debugLog(`Auto-approved CO: ${data[i][columnMap['CONumber'] || 0]}`);
     }
   }
   
@@ -210,49 +226,15 @@ function setupAllTriggers() {
   // Set up CO auto-approval (hourly)
   setupCOAutoApprovalTrigger();
   
-  // Set up CO approval email (on edit)
-  setupCOApprovalTrigger();
-  
   debugLog('All automatic triggers set up successfully');
   SpreadsheetApp.getActiveSpreadsheet().toast(
-    'Automation enabled! GRNs and COs auto-approve hourly, POs auto-close weekly, COs email on approval.', 
+    'Automation enabled! GRNs and COs auto-approve hourly, POs auto-close weekly.', 
     'System Setup Complete', 
     10
   );
 }
 
-/**
- * One-time setup function to create the CO approval trigger
- * Run this once to set up CO approval email automation
- */
-function setupCOApprovalTrigger() {
-  // Delete existing triggers for this function (avoid duplicates)
-  ScriptApp.getProjectTriggers().forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'processCOApprovals') {
-      ScriptApp.deleteTrigger(trigger);
-    }
-  });
-  
-  // Create new on-edit trigger
-  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  ScriptApp.newTrigger('processCOApprovals')
-    .onEdit(ss)
-    .create();
-    
-  debugLog('CO approval trigger created - processes approvals on edit');
-}
-
-/**
- * Remove the CO approval trigger (for maintenance or disable)
- */
-function removeCOApprovalTrigger() {
-  ScriptApp.getProjectTriggers().forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'processCOApprovals') {
-      ScriptApp.deleteTrigger(trigger);
-      debugLog('CO approval trigger removed');
-    }
-  });
-}
+// CO approval trigger functions removed - now using menu-based workflow
 
 /**
  * Remove all system triggers (for maintenance or reset)
@@ -261,7 +243,6 @@ function removeAllTriggers() {
   removeAutoApprovalTrigger();
   removePOClosureTrigger();
   removeCOAutoApprovalTrigger();
-  removeCOApprovalTrigger();
   
   debugLog('All automatic triggers removed');
   SpreadsheetApp.getActiveSpreadsheet().toast(

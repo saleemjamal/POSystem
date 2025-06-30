@@ -122,12 +122,29 @@
 
     <h2><span class="emoji">📊</span>Order Status Tracking</h2>
     <ul>
-      <li><strong>Pending:</strong> Order created, waiting for admin approval</li>
-      <li><strong>Approved:</strong> Admin approved, converting to purchase order</li>
-      <li><strong>Sent:</strong> Purchase order sent to distributor</li>
+      <li><strong>Pending:</strong> Order created, waiting for approval (manual approval needed for orders ≥₹10,000 or new items)</li>
+      <li><strong>Approved:</strong> Order approved but not yet sent - use "📧 Send Approved COs" menu to send to distributor</li>
+      <li><strong>Sent:</strong> Order email sent to distributor (Sent checkbox will be marked)</li>
       <li><strong>Received:</strong> Goods received at store</li>
       <li><strong>Delivered:</strong> Customer has collected/received the order</li>
     </ul>
+
+    <h2><span class="emoji">📧</span>Sending Approved Orders</h2>
+    
+    <div class="workflow-step">
+      <h3>Manual Approval Process</h3>
+      <p>For orders requiring manual approval (≥₹10,000 or containing new items):</p>
+      <ol>
+        <li>Create the customer order (it will show as "Pending")</li>
+        <li>Check the "Approved" checkbox in the CustomerOrders sheet</li>
+        <li>Go to menu: <strong>👥 Customer Orders → 📧 Send Approved COs</strong></li>
+        <li>System will send emails to distributors and mark the "Sent" checkbox</li>
+      </ol>
+    </div>
+    
+    <div class="tip">
+      <strong>Auto-Approval:</strong> Orders under ₹10,000 with existing items are automatically approved and sent immediately (both Approved and Sent checkboxes will be marked true).
+    </div>
 
     <h2><span class="emoji">💡</span>Best Practices</h2>
     
@@ -146,7 +163,7 @@
     <p>Select "New Item" and provide a detailed description. Admin will review and source it.</p>
 
     <h3>Q: How long does approval take?</h3>
-    <p>Typically within 24 hours during business days. Urgent orders can be flagged in notes.</p>
+    <p>Orders under ₹10,000 with existing items are approved and sent instantly (both checkboxes marked). Others require manual approval, typically within 1 hour or during business hours. If not manually approved within 1 hour, orders auto-approve as a safety net. Urgent orders can be flagged in notes.</p>
 
     <h3>Q: Can I modify an order after creating it?</h3>
     <p>Contact administrators for changes. It's better to get details right the first time.</p>

@@ -8,7 +8,8 @@ const BINNING_CONFIG = "BinningConfig";
 const GRN_SHEET_NAME = "GRNTracking";
 const PO_AUTO_CLOSE_DAYS = 10; // Days after which POs are auto-closed
 const GRN_AUTO_APPROVE_MINUTES = 60; // Minutes after which GRNs are auto-approved
-const CO_AUTO_APPROVE_MINUTES = 60; // Minutes after which COs are auto-approved
+const CO_AUTO_APPROVE_MINUTES = 60; // Minutes after which COs are auto-approved (currently using immediate approval instead)
+const CO_AUTO_APPROVE_THRESHOLD = 10000; // CO value threshold for auto-approval (₹10,000)
 const GRN_STATUS_MAPPING = {
   SENT: 'Sent',
   PARTIALLY_RECEIVED: 'Partially Received', 
@@ -33,7 +34,7 @@ const GM_HIGH_MARGIN = 0.10;
 const GM_LOW_MARGIN = -0.10;
 
 const ACTIVE_DAYS_THRESHOLD = 180;
-const MONTHS_OF_DATA = 5;
+const MONTHS_OF_DATA = 6;
 
 const TOS_THRESHOLD_LOW = 60;
 const TOS_THRESHOLD_MED = 90;

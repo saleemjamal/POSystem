@@ -244,10 +244,18 @@ function checkArchiveFileAccess(fileId) {
 }
 
 /**
- * Logs debug messages to a DebugLog sheet and the Logger.
+ * Logs debug messages to a DebugLog sheet, Logger, and file.
  */
 function debugLog(msg, ss) {
   try {
+    const timestamp = new Date();
+    const logMessage = `[${timestamp.toISOString()}] ${msg}`;
+    
+    // Log to console/Logger
+    Logger.log(logMessage);
+    console.log(logMessage);
+    
+    // Log to sheet (existing functionality)
     if (!ss) {
       ss = SpreadsheetApp.openById(MAIN_SS_ID);
     }
@@ -255,10 +263,20 @@ function debugLog(msg, ss) {
     if (!sheet) {
       sheet = ss.insertSheet('DebugLog');
     }
-    sheet.appendRow([new Date(), msg]);
-    Logger.log(msg);
+    sheet.appendRow([timestamp, msg]);
+    
+    // Log to file (new functionality)
+    try {
+      // Note: Google Apps Script doesn't have direct file system access
+      // This would require Drive API integration for persistent file logging
+      // For now, using console.log for better debugging
+    } catch (fileError) {
+      Logger.log('File logging not available: ' + fileError.message);
+    }
+    
   } catch (e) {
     Logger.log('debugLog error: ' + e + ' | original message: ' + msg);
+    console.error('debugLog error: ' + e + ' | original message: ' + msg);
   }
 }
 
@@ -309,6 +327,103 @@ function protectExternalSheet(fileId, poName) {
     debugLog(`ERROR (protect sheet): ${err.message}`);
     return `ERROR: ${err.message}`;
   }
+}
+
+/**
+ * Build a nicely-formatted PDF for Customer Orders. Returns a Blob ready to attach to email.
+ */
+function exportCOColumnsPDF(coNumber, outletName, brand, distributorName, coValue, lineItems, tempSS) {
+  const tempSheet = tempSS.getSheets()[0];
+  
+  // Prepare line items data for PDF
+  const headerRow = ['Line', 'Item Code', 'Item Name', 'Quantity', 'Cost Price', 'Notes'];
+  const dataRows = lineItems.map(item => [
+    item.lineNumber,
+    item.itemCode,
+    item.itemName,
+    item.quantity,
+    item.itemCostPrice,
+    item.notes || ''
+  ]);
+  
+  const colCount = headerRow.length;
+  const padRow = arr => arr.concat(Array(colCount - arr.length).fill(""));
+  
+  // Build header rows for CO
+  const headerRows = [
+    [`CO Number: ${coNumber || ''}`],
+    [`Date: ${formatDateForIndia(new Date()) || ''}`],
+    [`Brand: ${brand || ''}`],
+    [`Outlet: ${outletName || ''}`],
+    Array(colCount).fill(""),
+    padRow([`CO Value:`, "", coValue ? Number(coValue) : ""]),
+    headerRow
+  ].map(r => padRow(r));
+  
+  const finalData = headerRows.concat(dataRows);
+  
+  // Set data in temp sheet
+  tempSheet.getRange(1, 1, finalData.length, colCount).setValues(finalData);
+  
+  // Merge header cells
+  for (let i = 1; i <= 4; i++) {
+    tempSheet.getRange(i, 1, 1, colCount).merge();
+  }
+  
+  // Set professional column widths (matching PO format)
+  tempSheet.setColumnWidths(1, colCount, 120);
+  tempSheet.setColumnWidth(1, 60);   // Line number - narrow
+  tempSheet.setColumnWidth(2, 120);  // Item Code
+  tempSheet.setColumnWidth(3, 300);  // Item Name - wider for readability
+  tempSheet.setColumnWidth(4, 80);   // Quantity - narrow
+  tempSheet.setColumnWidth(5, 120);  // Cost Price
+  tempSheet.setColumnWidth(6, 200);  // Notes - wider
+  
+  // Apply professional formatting
+  tempSheet.getRange(1, 1, finalData.length, colCount).setFontFamily('Roboto');
+  tempSheet.getRange(1, 1, 7, colCount).setFontWeight('bold');
+  
+  // Strategic background highlighting (item name column)
+  tempSheet.getRange(8, 3, dataRows.length, 1).setBackground('#f8f9fa');
+  
+  // Professional alignment
+  tempSheet.getRange(6, 3).setFontWeight('bold').setHorizontalAlignment('right'); // CO Value
+  tempSheet.getRange(6, 1).setFontWeight('bold');
+  tempSheet.getRange(8, 1, dataRows.length, 1).setHorizontalAlignment('center'); // Line numbers
+  tempSheet.getRange(8, 4, dataRows.length, 1).setHorizontalAlignment('center'); // Quantity
+  tempSheet.getRange(8, 5, dataRows.length, 1).setHorizontalAlignment('right');  // Cost Price
+  
+  // Format currency
+  tempSheet.getRange(6, 3).setNumberFormat('"₹"#,##0.00'); // CO Value
+  if (dataRows.length > 0) {
+    tempSheet.getRange(8, 5, dataRows.length, 1).setNumberFormat('"₹"#,##0.00'); // Cost prices
+  }
+  
+  // Professional table borders
+  tempSheet.getRange(7, 1, finalData.length - 6, colCount)
+           .setBorder(true, true, true, true, true, true);
+  
+  // Alternating row colors (professional pattern)
+  for (let i = 1; i <= dataRows.length; i += 2) {
+    tempSheet.getRange(7 + i, 1, 1, colCount).setBackground('#f3f3f3');
+  }
+  
+  // Professional layout settings
+  tempSheet.setRowHeights(7, finalData.length - 6, 22);
+  tempSheet.setFrozenRows(7);
+  tempSheet.getRange(1, 1, 6, colCount).setHorizontalAlignment("left");
+  
+  // Generate PDF with professional settings
+  const url = `https://docs.google.com/spreadsheets/d/${tempSS.getId()}` +
+              `/export?format=pdf&size=A4&portrait=true&fitw=true` +
+              `&sheetnames=false&printtitle=false&pagenumbers=false` +
+              `&gridlines=false&fzr=false&gid=${tempSheet.getSheetId()}`;
+  
+  const pdfBlob = UrlFetchApp.fetch(url, {
+                   headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }
+                 }).getBlob().setName(`Customer_Order_${coNumber}.pdf`);
+  
+  return pdfBlob;
 }
 
 /**

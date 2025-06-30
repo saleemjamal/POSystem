@@ -40,7 +40,9 @@ function createSuperUserMenu(ui) {
       .addItem('➕ Create Single PO', 'showCreatePODialog')
       .addItem('📧 Send Approved POs', 'sendApprovedPOs'))
     .addSeparator()
-    .addItem('➕ Create Customer Order', 'showCreateCODialog')
+    .addSubMenu(ui.createMenu('👥 Customer Orders')
+      .addItem('➕ Create Customer Order', 'showCreateCODialog')
+      .addItem('📧 Send Approved COs', 'sendApprovedCOs'))
     .addSeparator()
     .addItem('📥 Create Goods Receipt', 'showCreateGRNDialog')
     .addSeparator()
@@ -85,6 +87,7 @@ function createInventoryManagerMenu(ui) {
 function createStoreManagerMenu(ui) {
   ui.createMenu('👥 Customer Orders')
     .addItem('➕ Create Customer Order', 'secureShowCreateCODialog')
+    .addItem('📧 Send Approved COs', 'secureSendApprovedCOs')
     .addItem('📋 My Orders', 'showMyCustomerOrders')
     .addSeparator()
     .addItem('👤 My Access Level', 'showCurrentUserInfo')
@@ -144,20 +147,20 @@ function showCreateGRNDialog() {
  */
 function onEdit(e) {
   try {
+    debugLog(`OnEdit triggered on sheet: ${e.source.getActiveSheet().getName()}`);
+    
     // Handle GRN approval
     if (e.source.getActiveSheet().getName() === 'GRNTracking') {
       handleGRNApproval(e);
     }
     
-    // Handle CO approval
-    if (e.source.getActiveSheet().getName() === 'CustomerOrders') {
-      handleCOApproval(e);
-    }
+    // CO approval now handled via menu - no longer using onEdit trigger
     
     // Add other onEdit handlers here as needed
     
   } catch (error) {
     debugLog(`OnEdit error: ${error.message}`);
+    debugLog(`Error stack: ${error.stack}`);
   }
 }
 
@@ -328,6 +331,15 @@ function showHelpDialog() {
 function secureShowCreateCODialog() {
   if (validateUserPermission('CREATE_CO')) {
     showCreateCODialog();
+  }
+}
+
+/**
+ * Secure wrapper for sendApprovedCOs
+ */
+function secureSendApprovedCOs() {
+  if (validateUserPermission('CREATE_CO')) {
+    sendApprovedCOs();
   }
 }
 

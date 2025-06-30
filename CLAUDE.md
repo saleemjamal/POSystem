@@ -62,11 +62,13 @@ This is a comprehensive **Procurement Management System** for **Poppat Jamals**,
 - **Fulfillment calculation**: Updates PO completion percentages
 - **Late delivery handling**: Status tracking and notifications
 
-### 4. Customer Order Management (Recent Addition)
-- Multi-item order support with validation
-- Brand-specific CO number generation
-- Distributor lookup and assignment
-- Line items stored in `COLineItems` sheet
+### 4. Customer Order Management
+- **Purpose**: Handle orders when items are out-of-stock or customer needs large quantities
+- **Workflow**: Manager creates CO → Sent to distributor → Distributor fulfills directly to customer
+- **Multi-item support**: Complete line-item tracking with cost prices
+- **Value-based approval**: Auto-approve under ₹10,000, manual approval for larger orders
+- **Professional PDFs**: Same quality formatting as Purchase Orders
+- **Email automation**: Immediate notification to distributors upon approval
 
 ## Data Model (Google Sheets)
 
@@ -137,6 +139,38 @@ This is a comprehensive **Procurement Management System** for **Poppat Jamals**,
 - Follow role-based access patterns
 - Maintain sheet protection configurations
 - Use constants from `constants.js`
+- **Always use header-based column mapping instead of hardcoded indexes**
+
+### Sheet Data Access Best Practices
+**CRITICAL: Use Header-Based Column Mapping**
+
+When accessing Google Sheets data, **NEVER** use hardcoded column indexes as they break when columns are added/removed. Instead, use dynamic header mapping:
+
+```javascript
+// ❌ BAD - Fragile, breaks when columns change
+const distributorName = rowData[13];
+const distributorEmail = rowData[14];
+
+// ✅ GOOD - Robust, adapts to column changes
+const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+const columnMap = {};
+headers.forEach((header, index) => {
+  if (header) columnMap[header] = index;
+});
+
+const distributorName = rowData[columnMap['DistributorName']];
+const distributorEmail = rowData[columnMap['DistributorEmail']];
+```
+
+**Implementation Guidelines:**
+- Create column mapping functions for each sheet type
+- Validate required columns exist before processing
+- Use descriptive error messages when columns are missing
+- Log column validation results for debugging
+- Include column structure validation in setup processes
+
+**Example Implementation:**
+See `getCOColumnMapping()` in `customerOrderService.js` for the standard pattern to follow.
 
 ### Adding New Features
 1. Update role permissions in `userRoles.js`
@@ -165,12 +199,71 @@ This is a comprehensive **Procurement Management System** for **Poppat Jamals**,
 - Use efficient sheet operations (batch reads/writes)
 - Archive old data to Google Drive
 
+## Customer Order Business Logic
+
+### Purpose and Workflow
+Customer Orders (COs) are created when:
+- Items are out-of-stock at the outlet
+- Customer requests large quantities that exceed normal inventory
+- Special orders that require direct distributor fulfillment
+
+**Process Flow:**
+1. Customer requests item → Manager creates CO
+2. CO sent to appropriate distributor (not customer)
+3. Distributor fulfills order directly to customer
+4. Outlet tracks order without holding inventory
+
+### CO Value Calculation and Approval
+- **Line Item Cost**: Uses `Avg.Cost Price` from ItemMaster for existing items
+- **New Item Cost**: Manager enters cost price during CO creation
+- **CO Value**: Sum of (Quantity × Cost Price) for all line items
+- **Auto-Approval Threshold**: ₹10,000
+
+### Approval Rules
+```
+if (hasNewItems || coValue >= ₹10,000) {
+  // Requires manual approval
+} else {
+  // Auto-approve and send email immediately
+}
+```
+
+### CO Number Format
+`CO-{OutletCode}-{BrandCode}-{YYMMDD}-{001}`
+- Example: `CO-MTR-ALLTIM-250625-001`
+- Sequential numbering per outlet/brand/day
+
+### Data Structure
+**CustomerOrders Sheet:**
+- CONumber, OutletName, Brand, CustomerName
+- TotalQuantity, COValue (₹ formatted)
+- Approval tracking (Approved, ApprovalType, DateApproved)
+- Distributor assignment (DistributorName, DistributorEmail)
+
+**COLineItems Sheet:**
+- CONumber, LineNumber, ItemCode, ItemName
+- Quantity, ItemType (existing/new_item)
+- ItemCostPrice (₹ formatted), Notes
+
+### Professional PDF Generation
+- Uses same formatting engine as Purchase Orders
+- Includes CO details, line items with cost prices, total value
+- Branded layout with proper styling and currency formatting
+- Sent as email attachment to distributors
+
+### Email Integration
+- Professional HTML templates with company branding
+- Auto-sends to distributor upon approval
+- Includes outlet-specific CC rules
+- Same email quality as PO notifications
+
 ## Recent Enhancements
-- Multi-item customer order support
-- Brand integration in CO numbers
-- Enhanced UI styling and validation
-- Improved distributor lookup
-- Store manager role implementation
+- **Threshold-based auto-approval**: Orders under ₹10K auto-process
+- **Professional PDF generation**: Same quality as PO documents
+- **Cost price integration**: Accurate value calculation and tracking
+- **Immediate email automation**: Auto-approved orders sent instantly
+- **Enhanced form validation**: Cost price capture for new items
+- **Multi-item support**: Complete line-item tracking with individual pricing
 
 ## Known Issues & Troubleshooting
 
