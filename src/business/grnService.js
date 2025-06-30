@@ -14,10 +14,10 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
   try {
     const ss = SpreadsheetApp.openById(MAIN_SS_ID);
     
-    // Validate PO exists
-    const poData = validateAndGetPOData(poNumber);
-    if (!poData.success) {
-      return { success: false, message: poData.message };
+    // Validate order exists (PO or CO)
+    const orderData = validateAndGetOrderData(poNumber);
+    if (!orderData.success) {
+      return { success: false, message: orderData.message };
     }
     
     // Generate GRN number
@@ -52,8 +52,8 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
     const grnRecord = [
       grnNumber,
       poNumber,
-      poData.outlet,
-      poData.brand,
+      orderData.outlet,
+      orderData.brand,
       invoiceNumber,
       grnDateValue, // Always a full timestamp
       Number(grnAmount),
@@ -71,9 +71,9 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
     );
     
     // Update PO status if this is the first GRN
-    updatePOStatusOnGRNCreation(poNumber, poData);
+    updatePOStatusOnGRNCreation(poNumber, orderData);
     
-    debugLog(`GRN created: ${grnNumber} for PO: ${poNumber}`);
+    debugLog(`GRN created: ${grnNumber} for order: ${poNumber}`);
     
     return {
       success: true,
@@ -91,53 +91,111 @@ function createGRN(poNumber, invoiceNumber, grnAmount, grnDate = null, notes = '
 }
 
 /**
- * Validates PO exists and returns PO data
- * @param {string} poNumber
- * @returns {Object} Validation result with PO data
+ * Validates order exists and returns order data (works for both POs and COs)
+ * @param {string} orderNumber
+ * @returns {Object} Validation result with order data
  */
-function validateAndGetPOData(poNumber) {
+function validateAndGetOrderData(orderNumber) {
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  const poSheet = ss.getSheetByName('POTracking');
   
-  if (!poSheet) {
-    return { success: false, message: 'POTracking sheet not found' };
-  }
+  // Detect if this is a Customer Order (starts with CO-) or Purchase Order
+  const isCO = String(orderNumber).startsWith('CO-');
   
-  const data = poSheet.getDataRange().getValues();
-  const headers = data[0];
-  const poCol = headers.indexOf('PONumber');
-  const outletCol = headers.indexOf('OutletName');
-  const brandCol = headers.indexOf('Brand');
-  const statusCol = headers.indexOf('Status');
-  
-  if (poCol === -1) {
-    return { success: false, message: 'PONumber column not found in POTracking' };
-  }
-  
-  // Find PO row
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][poCol]) === String(poNumber)) {
-      const status = data[i][statusCol];
-      
-      // Check if PO is in valid state for GRN creation
-      if (!['Sent', 'Partially Received', 'Late Fulfillment'].includes(status)) {
-        return { 
-          success: false, 
-          message: `Cannot create GRN for PO with status: ${status}` 
+  if (isCO) {
+    // Handle Customer Order validation
+    const coSheet = ss.getSheetByName('CustomerOrders');
+    if (!coSheet) {
+      return { success: false, message: 'CustomerOrders sheet not found' };
+    }
+    
+    const data = coSheet.getDataRange().getValues();
+    const headers = data[0];
+    const coNumCol = headers.indexOf('CONumber');
+    const outletCol = headers.indexOf('OutletName');
+    const brandCol = headers.indexOf('Brand');
+    const approvedCol = headers.indexOf('Approved');
+    const sentCol = headers.indexOf('Sent');
+    
+    if (coNumCol === -1) {
+      return { success: false, message: 'CONumber column not found in CustomerOrders' };
+    }
+    
+    // Find CO row
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][coNumCol]) === String(orderNumber)) {
+        const isApproved = data[i][approvedCol] === true;
+        const isSent = data[i][sentCol] === true;
+        
+        // Check if CO is in valid state for GRN creation
+        if (!isApproved || !isSent) {
+          return { 
+            success: false, 
+            message: `Cannot create GRN for CO that is not approved and sent` 
+          };
+        }
+        
+        return {
+          success: true,
+          outlet: data[i][outletCol],
+          brand: data[i][brandCol],
+          status: 'Customer Order',
+          orderType: 'CO',
+          rowIndex: i
         };
       }
-      
-      return {
-        success: true,
-        outlet: data[i][outletCol],
-        brand: data[i][brandCol],
-        status: status,
-        rowIndex: i
-      };
     }
+    
+    return { success: false, message: `Customer Order ${orderNumber} not found` };
+    
+  } else {
+    // Handle Purchase Order validation (existing logic)
+    const poSheet = ss.getSheetByName('POTracking');
+    if (!poSheet) {
+      return { success: false, message: 'POTracking sheet not found' };
+    }
+    
+    const data = poSheet.getDataRange().getValues();
+    const headers = data[0];
+    const poCol = headers.indexOf('PONumber');
+    const outletCol = headers.indexOf('OutletName');
+    const brandCol = headers.indexOf('Brand');
+    const statusCol = headers.indexOf('Status');
+    
+    if (poCol === -1) {
+      return { success: false, message: 'PONumber column not found in POTracking' };
+    }
+    
+    // Find PO row
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][poCol]) === String(orderNumber)) {
+        const status = data[i][statusCol];
+        
+        // Check if PO is in valid state for GRN creation
+        if (!['Sent', 'Partially Received', 'Late Fulfillment'].includes(status)) {
+          return { 
+            success: false, 
+            message: `Cannot create GRN for PO with status: ${status}` 
+          };
+        }
+        
+        return {
+          success: true,
+          outlet: data[i][outletCol],
+          brand: data[i][brandCol],
+          status: status,
+          orderType: 'PO',
+          rowIndex: i
+        };
+      }
+    }
+    
+    return { success: false, message: `Purchase Order ${orderNumber} not found` };
   }
-  
-  return { success: false, message: `PO ${poNumber} not found` };
+}
+
+// Keep old function name for backward compatibility
+function validateAndGetPOData(poNumber) {
+  return validateAndGetOrderData(poNumber);
 }
 
 /**
@@ -224,25 +282,31 @@ function getOrCreateGRNSheet(ss) {
  * @param {string} poNumber
  * @param {Object} poData
  */
-function updatePOStatusOnGRNCreation(poNumber, poData) {
-  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
-  const poSheet = ss.getSheetByName('POTracking');
-  const data = poSheet.getDataRange().getValues();
-  const headers = data[0];
-  
-  const poCol = headers.indexOf('PONumber');
-  const statusCol = headers.indexOf('Status');
-  
-  // Find PO row and update status if currently "Sent"
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][poCol]) === String(poNumber)) {
-      const currentStatus = data[i][statusCol];
-      if (currentStatus === 'Sent') {
-        poSheet.getRange(i + 1, statusCol + 1).setValue('Partially Received');
-        debugLog(`Updated PO ${poNumber} status to 'Partially Received'`);
+function updatePOStatusOnGRNCreation(orderNumber, orderData) {
+  // Only update status for Purchase Orders, not Customer Orders
+  if (orderData.orderType === 'PO') {
+    const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+    const poSheet = ss.getSheetByName('POTracking');
+    const data = poSheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    const poCol = headers.indexOf('PONumber');
+    const statusCol = headers.indexOf('Status');
+    
+    // Find PO row and update status if currently "Sent"
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][poCol]) === String(orderNumber)) {
+        const currentStatus = data[i][statusCol];
+        if (currentStatus === 'Sent') {
+          poSheet.getRange(i + 1, statusCol + 1).setValue('Partially Received');
+          debugLog(`Updated PO ${orderNumber} status to 'Partially Received'`);
+        }
+        break;
       }
-      break;
     }
+  } else {
+    // For Customer Orders, no status update needed as they don't have the same status lifecycle
+    debugLog(`GRN created for Customer Order ${orderNumber} - no status update needed`);
   }
 }
 
@@ -291,71 +355,79 @@ function handleGRNApproval(editEvent) {
 }
 
 /**
- * Updates PO fulfillment metrics and status based on approved GRNs
- * @param {string} poNumber
+ * Updates order fulfillment metrics and status based on approved GRNs (handles both POs and COs)
+ * @param {string} orderNumber
  */
-function updatePOFulfillmentMetrics(poNumber) {
+function updatePOFulfillmentMetrics(orderNumber) {
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
   
-  // Calculate total approved GRN amount for this PO
+  // Calculate total approved GRN amount for this order
   const grnSheet = ss.getSheetByName('GRNTracking');
   const grnData = grnSheet.getDataRange().getValues();
   const grnHeaders = grnData[0];
   
-  const grnPoCol = grnHeaders.indexOf('PONumber');
+  const grnOrderCol = grnHeaders.indexOf('PONumber'); // Column stores both PO and CO numbers
   const grnAmountCol = grnHeaders.indexOf('GRNAmount');
   const grnApprovedCol = grnHeaders.indexOf('Approved');
   
   let totalGRNAmount = 0;
   for (let i = 1; i < grnData.length; i++) {
-    if (String(grnData[i][grnPoCol]) === String(poNumber) && 
+    if (String(grnData[i][grnOrderCol]) === String(orderNumber) && 
         grnData[i][grnApprovedCol] === true) {
       totalGRNAmount += Number(grnData[i][grnAmountCol]);
     }
   }
   
-  // Get PO amount and update fulfillment
-  const poSheet = ss.getSheetByName('POTracking');
-  const poData = poSheet.getDataRange().getValues();
-  const poHeaders = poData[0];
+  // Only update fulfillment metrics for Purchase Orders, not Customer Orders
+  const isCO = String(orderNumber).startsWith('CO-');
   
-  const poNumCol = poHeaders.indexOf('PONumber');
-  const poAmountCol = poHeaders.indexOf('POAmount');
-  const statusCol = poHeaders.indexOf('Status');
-  let fulfillmentCol = poHeaders.indexOf('FulfillmentAmount');
-  let fulfillmentPctCol = poHeaders.indexOf('FulfillmentPercentage');
-  
-  // Add columns if they don't exist
-  if (fulfillmentCol === -1) {
-    poSheet.getRange(1, poSheet.getLastColumn() + 1).setValue('FulfillmentAmount');
-    fulfillmentCol = poSheet.getLastColumn() - 1;
-  }
-  if (fulfillmentPctCol === -1) {
-    poSheet.getRange(1, poSheet.getLastColumn() + 1).setValue('FulfillmentPercentage');
-    fulfillmentPctCol = poSheet.getLastColumn() - 1;
-  }
-  
-  // Update PO fulfillment data
-  for (let i = 1; i < poData.length; i++) {
-    if (String(poData[i][poNumCol]) === String(poNumber)) {
-      const poAmount = Number(poData[i][poAmountCol]);
-      const fulfillmentPct = poAmount > 0 ? (totalGRNAmount / poAmount) * 100 : 0;
-      const currentStatus = poData[i][statusCol];
-      
-      poSheet.getRange(i + 1, fulfillmentCol + 1).setValue(totalGRNAmount)
-             .setNumberFormat('"₹"#,##,##0.00');
-      poSheet.getRange(i + 1, fulfillmentPctCol + 1).setValue(fulfillmentPct / 100)
-             .setNumberFormat('0.00%');
-      
-      // Update status based on fulfillment if currently "Partially Received"
-      if (currentStatus === 'Partially Received' && fulfillmentPct >= 100) {
-        poSheet.getRange(i + 1, statusCol + 1).setValue('Closed - Complete');
-        debugLog(`PO ${poNumber} status updated to 'Closed - Complete' (100% fulfilled)`);
-      }
-      
-      debugLog(`Updated fulfillment for PO ${poNumber}: ${fulfillmentPct.toFixed(1)}%`);
-      break;
+  if (!isCO) {
+    // Handle Purchase Order fulfillment tracking
+    const poSheet = ss.getSheetByName('POTracking');
+    const poData = poSheet.getDataRange().getValues();
+    const poHeaders = poData[0];
+    
+    const poNumCol = poHeaders.indexOf('PONumber');
+    const poAmountCol = poHeaders.indexOf('POAmount');
+    const statusCol = poHeaders.indexOf('Status');
+    let fulfillmentCol = poHeaders.indexOf('FulfillmentAmount');
+    let fulfillmentPctCol = poHeaders.indexOf('FulfillmentPercentage');
+    
+    // Add columns if they don't exist
+    if (fulfillmentCol === -1) {
+      poSheet.getRange(1, poSheet.getLastColumn() + 1).setValue('FulfillmentAmount');
+      fulfillmentCol = poSheet.getLastColumn() - 1;
     }
+    if (fulfillmentPctCol === -1) {
+      poSheet.getRange(1, poSheet.getLastColumn() + 1).setValue('FulfillmentPercentage');
+      fulfillmentPctCol = poSheet.getLastColumn() - 1;
+    }
+    
+    // Update PO fulfillment data
+    for (let i = 1; i < poData.length; i++) {
+      if (String(poData[i][poNumCol]) === String(orderNumber)) {
+        const poAmount = Number(poData[i][poAmountCol]);
+        const fulfillmentPct = poAmount > 0 ? (totalGRNAmount / poAmount) * 100 : 0;
+        const currentStatus = poData[i][statusCol];
+        
+        poSheet.getRange(i + 1, fulfillmentCol + 1).setValue(totalGRNAmount)
+               .setNumberFormat('"₹"#,##,##0.00');
+        poSheet.getRange(i + 1, fulfillmentPctCol + 1).setValue(fulfillmentPct / 100)
+               .setNumberFormat('0.00%');
+        
+        // Update status based on fulfillment if currently "Partially Received"
+        if (currentStatus === 'Partially Received' && fulfillmentPct >= 100) {
+          poSheet.getRange(i + 1, statusCol + 1).setValue('Closed - Complete');
+          debugLog(`PO ${orderNumber} status updated to 'Closed - Complete' (100% fulfilled)`);
+        }
+        
+        debugLog(`Updated fulfillment for PO ${orderNumber}: ${fulfillmentPct.toFixed(1)}%`);
+        break;
+      }
+    }
+  } else {
+    // For Customer Orders, just log the GRN amount - no fulfillment tracking needed
+    debugLog(`GRN approved for Customer Order ${orderNumber}: ₹${totalGRNAmount.toLocaleString('en-IN')}`);
   }
 }
 
@@ -469,33 +541,82 @@ function createGRNFromUI(poNumber, invoiceNumber, grnAmount, grnDateStr, notes) 
  * Gets list of POs that can have GRNs created
  * @returns {Array} Array of PO objects with number, outlet, brand, status
  */
-function getEligiblePOsForGRN() {
+function getEligibleOrdersForGRN() {
   const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+  const eligibleOrders = [];
+  
+  // Get eligible POs
   const poSheet = ss.getSheetByName('POTracking');
-  if (!poSheet) return [];
-  
-  const data = poSheet.getDataRange().getValues();
-  const headers = data[0];
-  
-  const poCol = headers.indexOf('PONumber');
-  const outletCol = headers.indexOf('OutletName');
-  const brandCol = headers.indexOf('Brand');
-  const statusCol = headers.indexOf('Status');
-  
-  const eligiblePOs = [];
-  const validStatuses = ['Sent', 'Partially Received', 'Late Fulfillment'];
-  
-  for (let i = 1; i < data.length; i++) {
-    const status = data[i][statusCol];
-    if (validStatuses.includes(status)) {
-      eligiblePOs.push({
-        poNumber: data[i][poCol],
-        outlet: data[i][outletCol],
-        brand: data[i][brandCol],
-        status: status
-      });
+  if (poSheet) {
+    const poData = poSheet.getDataRange().getValues();
+    const poHeaders = poData[0];
+    
+    const poCol = poHeaders.indexOf('PONumber');
+    const outletCol = poHeaders.indexOf('OutletName');
+    const brandCol = poHeaders.indexOf('Brand');
+    const statusCol = poHeaders.indexOf('Status');
+    
+    const validStatuses = ['Sent', 'Partially Received', 'Late Fulfillment'];
+    
+    for (let i = 1; i < poData.length; i++) {
+      const status = poData[i][statusCol];
+      if (validStatuses.includes(status)) {
+        eligibleOrders.push({
+          orderNumber: poData[i][poCol],
+          outlet: poData[i][outletCol],
+          brand: poData[i][brandCol],
+          status: status,
+          type: 'PO',
+          displayText: `${poData[i][poCol]} - ${poData[i][outletCol]} - ${poData[i][brandCol]} (PO - ${status})`
+        });
+      }
     }
   }
   
-  return eligiblePOs.sort((a, b) => b.poNumber - a.poNumber); // Latest first
+  // Get eligible Customer Orders
+  const coSheet = ss.getSheetByName('CustomerOrders');
+  if (coSheet) {
+    const coData = coSheet.getDataRange().getValues();
+    const coHeaders = coData[0];
+    
+    const coNumCol = coHeaders.indexOf('CONumber');
+    const outletCol = coHeaders.indexOf('OutletName');
+    const brandCol = coHeaders.indexOf('Brand');
+    const approvedCol = coHeaders.indexOf('Approved');
+    const sentCol = coHeaders.indexOf('Sent');
+    const coValueCol = coHeaders.indexOf('COValue');
+    
+    if (coNumCol !== -1 && approvedCol !== -1 && sentCol !== -1) {
+      for (let i = 1; i < coData.length; i++) {
+        const isApproved = coData[i][approvedCol] === true;
+        const isSent = coData[i][sentCol] === true;
+        const coNumber = coData[i][coNumCol];
+        const coValue = coData[i][coValueCol];
+        
+        if (isApproved && isSent && coNumber) {
+          eligibleOrders.push({
+            orderNumber: coNumber,
+            outlet: coData[i][outletCol],
+            brand: coData[i][brandCol],
+            status: 'Customer Order',
+            type: 'CO',
+            displayText: `${coNumber} - ${coData[i][outletCol]} - ${coData[i][brandCol]} (CO - ₹${Number(coValue).toLocaleString('en-IN')})`
+          });
+        }
+      }
+    }
+  }
+  
+  // Sort by order number (latest first)
+  return eligibleOrders.sort((a, b) => {
+    // Extract numeric part for sorting
+    const aNum = parseInt(a.orderNumber.toString().replace(/[^\d]/g, ''));
+    const bNum = parseInt(b.orderNumber.toString().replace(/[^\d]/g, ''));
+    return bNum - aNum;
+  });
+}
+
+// Keep old function name for backward compatibility
+function getEligiblePOsForGRN() {
+  return getEligibleOrdersForGRN();
 }

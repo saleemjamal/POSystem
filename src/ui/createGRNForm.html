@@ -108,16 +108,16 @@
   <div class="container">
     <h2>Create Goods Receipt Note (GRN)</h2>
     
-    <div id="loading" class="loading">Loading eligible POs...</div>
+    <div id="loading" class="loading">Loading eligible orders...</div>
     
     <div id="form" style="display: none;">
       <div id="error" class="error" style="display: none;"></div>
       <div id="success" class="success" style="display: none;"></div>
       
       <div class="form-group">
-        <label for="poNumber">PO Number: <span class="required">*</span></label>
-        <select id="poNumber" onchange="onPOChange()">
-          <option value="">Select a PO...</option>
+        <label for="poNumber">Order Number: <span class="required">*</span></label>
+        <select id="poNumber" onchange="onOrderChange()">
+          <option value="">Select an order...</option>
         </select>
       </div>
       
@@ -152,7 +152,7 @@
   </div>
 
   <script>
-    let eligiblePOs = [];
+    let eligibleOrders = [];
     
     // Load data when page loads
     window.onload = function() {
@@ -160,21 +160,21 @@
       document.getElementById('grnDate').value = new Date().toISOString().split('T')[0];
       
       google.script.run
-        .withSuccessHandler(onEligiblePOsLoaded)
+        .withSuccessHandler(onEligibleOrdersLoaded)
         .withFailureHandler(onError)
-        .getEligiblePOsForGRN();
+        .getEligibleOrdersForGRN();
     };
     
-    function onEligiblePOsLoaded(pos) {
-      eligiblePOs = pos;
+    function onEligibleOrdersLoaded(orders) {
+      eligibleOrders = orders;
       
-      // Populate PO dropdown
-      const poSelect = document.getElementById('poNumber');
-      pos.forEach(po => {
+      // Populate order dropdown
+      const orderSelect = document.getElementById('poNumber');
+      orders.forEach(order => {
         const option = document.createElement('option');
-        option.value = po.poNumber;
-        option.textContent = `${po.poNumber} - ${po.outlet} - ${po.brand} (${po.status})`;
-        poSelect.appendChild(option);
+        option.value = order.orderNumber;
+        option.textContent = order.displayText;
+        orderSelect.appendChild(option);
       });
       
       document.getElementById('loading').style.display = 'none';
@@ -185,32 +185,32 @@
       document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + error.message + '</div>';
     }
     
-    function onPOChange() {
-      const poSelect = document.getElementById('poNumber');
-      const selectedPO = poSelect.value;
-      const poInfo = document.getElementById('poInfo');
+    function onOrderChange() {
+      const orderSelect = document.getElementById('poNumber');
+      const selectedOrder = orderSelect.value;
+      const orderInfo = document.getElementById('poInfo');
       const createBtn = document.getElementById('createBtn');
       
-      if (selectedPO) {
-        const po = eligiblePOs.find(p => p.poNumber === selectedPO);
-        if (po) {
-          poInfo.innerHTML = `<strong>Outlet:</strong> ${po.outlet}<br><strong>Brand:</strong> ${po.brand}<br><strong>Status:</strong> ${po.status}`;
-          poInfo.style.display = 'block';
+      if (selectedOrder) {
+        const order = eligibleOrders.find(o => o.orderNumber === selectedOrder);
+        if (order) {
+          orderInfo.innerHTML = `<strong>Outlet:</strong> ${order.outlet}<br><strong>Brand:</strong> ${order.brand}<br><strong>Type:</strong> ${order.type}<br><strong>Status:</strong> ${order.status}`;
+          orderInfo.style.display = 'block';
         }
         updateCreateButtonState();
       } else {
-        poInfo.style.display = 'none';
+        orderInfo.style.display = 'none';
         createBtn.disabled = true;
       }
     }
     
     function updateCreateButtonState() {
-      const poNumber = document.getElementById('poNumber').value;
+      const orderNumber = document.getElementById('poNumber').value;
       const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
       const grnAmount = document.getElementById('grnAmount').value;
       const createBtn = document.getElementById('createBtn');
       
-      createBtn.disabled = !(poNumber && invoiceNumber && grnAmount && parseFloat(grnAmount) > 0);
+      createBtn.disabled = !(orderNumber && invoiceNumber && grnAmount && parseFloat(grnAmount) > 0);
     }
     
     // Add event listeners for form validation
