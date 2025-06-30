@@ -87,55 +87,39 @@ function applyArchiveFileAccess(fileId) {
  */
 function setupPOArchiveAccess(file) {
   try {
-    // Remove existing shares to reset permissions
-    const viewers = file.getViewers();
-    const editors = file.getEditors();
+    // Get current permissions
+    const currentViewers = file.getViewers().map(user => user.getEmail().toLowerCase());
+    const currentEditors = file.getEditors().map(user => user.getEmail().toLowerCase());
     
-    // Remove all current editors except owner
-    editors.forEach(user => {
-      try {
-        file.removeEditor(user);
-      } catch (error) {
-        // Ignore errors (likely trying to remove owner)
+    // Get required permissions by role
+    const requiredEditors = [
+      ...getUsersForRole('SUPER_USER'),
+      ...getUsersForRole('PURCHASE_MANAGER')
+    ].map(email => email.toLowerCase());
+    
+    const requiredViewers = getUsersForRole('INVENTORY_MANAGER').map(email => email.toLowerCase());
+    
+    // Only add editors who don't already have edit access
+    requiredEditors.forEach(email => {
+      if (!currentEditors.includes(email)) {
+        try {
+          file.addEditor(email);
+          debugLog(`Added editor: ${email}`);
+        } catch (error) {
+          debugLog(`Could not add editor ${email}: ${error.message}`);
+        }
       }
     });
     
-    // Remove all current viewers
-    viewers.forEach(user => {
-      try {
-        file.removeViewer(user);
-      } catch (error) {
-        // Ignore errors
-      }
-    });
-    
-    // Add super users as editors
-    getUsersForRole('SUPER_USER').forEach(email => {
-      try {
-        file.addEditor(email);
-        debugLog(`Added super user editor: ${email}`);
-      } catch (error) {
-        debugLog(`Could not add super user editor ${email}: ${error.message}`);
-      }
-    });
-    
-    // Add purchase managers as editors
-    getUsersForRole('PURCHASE_MANAGER').forEach(email => {
-      try {
-        file.addEditor(email);
-        debugLog(`Added purchase manager editor: ${email}`);
-      } catch (error) {
-        debugLog(`Could not add purchase manager editor ${email}: ${error.message}`);
-      }
-    });
-    
-    // Add inventory managers as viewers only
-    getUsersForRole('INVENTORY_MANAGER').forEach(email => {
-      try {
-        file.addViewer(email);
-        debugLog(`Added inventory manager viewer: ${email}`);
-      } catch (error) {
-        debugLog(`Could not add inventory manager viewer ${email}: ${error.message}`);
+    // Only add viewers who don't already have any access
+    requiredViewers.forEach(email => {
+      if (!currentEditors.includes(email) && !currentViewers.includes(email)) {
+        try {
+          file.addViewer(email);
+          debugLog(`Added viewer: ${email}`);
+        } catch (error) {
+          debugLog(`Could not add viewer ${email}: ${error.message}`);
+        }
       }
     });
     
