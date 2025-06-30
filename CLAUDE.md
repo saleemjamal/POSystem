@@ -140,6 +140,7 @@ This is a comprehensive **Procurement Management System** for **Poppat Jamals**,
 - Maintain sheet protection configurations
 - Use constants from `constants.js`
 - **Always use header-based column mapping instead of hardcoded indexes**
+- **Follow the Approval and Email Delivery Pattern for all approval processes**
 
 ### Sheet Data Access Best Practices
 **CRITICAL: Use Header-Based Column Mapping**
@@ -171,6 +172,58 @@ const distributorEmail = rowData[columnMap['DistributorEmail']];
 
 **Example Implementation:**
 See `getCOColumnMapping()` in `customerOrderService.js` for the standard pattern to follow.
+
+### Approval and Email Delivery Pattern
+**CRITICAL: Proper Checkbox State Management**
+
+For all approval processes that involve email delivery, follow this standard pattern to ensure data integrity:
+
+**Checkbox States:**
+- **Approved checkbox**: Set based on business logic (auto-approval or manual approval)
+- **Sent checkbox**: **ONLY** set to `true` after successful email delivery
+
+**Implementation Pattern:**
+
+```javascript
+// ❌ BAD - Sets Sent=true before email is actually sent
+const record = [
+  // ... other fields
+  autoApproved, // Approved checkbox
+  autoApproved, // Sent checkbox - WRONG! Email not sent yet
+  // ... other fields
+];
+
+// ✅ GOOD - Proper checkbox state management
+const record = [
+  // ... other fields
+  autoApproved, // Approved checkbox based on business logic
+  false, // Sent checkbox - only true after successful email delivery
+  // ... other fields
+];
+
+// Later, after successful email delivery:
+if (emailResult === "SUCCESS") {
+  sheet.getRange(rowNumber, columnMap['Sent'] + 1).setValue(true);
+  sheet.getRange(rowNumber, columnMap['ApprovalType'] + 1).setValue('Auto');
+  // Update other success fields
+} else {
+  // Handle email failure - Sent remains false
+  sheet.getRange(rowNumber, columnMap['ApprovalType'] + 1).setValue(`ERROR: ${emailResult}`);
+}
+```
+
+**Business Logic Examples:**
+- **Auto-approved orders**: Approved=`true`, Sent=`false` initially → Sent=`true` only after successful email
+- **Manual approval**: Approved=`false`, Sent=`false` initially → both updated when manually approved and email sent
+- **Email failures**: Approved can be `true` but Sent remains `false`, with error details in ApprovalType field
+
+**Error Handling:**
+- Use column mapping instead of hardcoded indexes for all field updates
+- Log email failures but don't fail the entire process
+- Update status fields to reflect email delivery state
+- Provide clear error messages for troubleshooting
+
+This pattern ensures that the Sent checkbox accurately reflects email delivery status and prevents data inconsistencies.
 
 ### Adding New Features
 1. Update role permissions in `userRoles.js`

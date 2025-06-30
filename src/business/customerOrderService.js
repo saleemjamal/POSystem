@@ -91,7 +91,7 @@ function createCustomerOrder(orderData) {
       autoApproved ? CO_STATUS.APPROVED : CO_STATUS.PENDING,
       new Date(),
       autoApproved, // Approved checkbox (true for auto, false for manual)
-      autoApproved, // Sent checkbox (true for auto, false for manual)
+      false, // Sent checkbox - only true after successful email delivery
       autoApproved ? CO_APPROVAL_TYPES.AUTO : '', // ApprovalType
       autoApproved ? new Date() : '', // Date Approved
       orderData.notes || '',
@@ -142,7 +142,11 @@ function createCustomerOrder(orderData) {
       } catch (emailError) {
         debugLog(`Error sending auto-approved CO email: ${emailError.message}`);
         // Update ApprovalType to show email error but don't fail the CO creation
-        coSheet.getRange(lastRow, 12).setValue(`AUTO - Email Error: ${emailError.message}`);
+        // Use column mapping to get the correct ApprovalType column
+        const columnMap = getCOColumnMapping(coSheet);
+        if (columnMap && columnMap['ApprovalType']) {
+          coSheet.getRange(lastRow, columnMap['ApprovalType'] + 1).setValue(`AUTO - Email Error: ${emailError.message}`);
+        }
       }
     }
     
