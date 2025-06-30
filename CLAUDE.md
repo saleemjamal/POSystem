@@ -53,9 +53,10 @@ This is a comprehensive **Procurement Management System** for **Poppat Jamals**,
 
 ### 2. Purchase Order Management
 - **Workflow**: Created → Approved → Sent → Partially Received → Closed
-- **Features**: Batch generation, PDF creation, email automation
+- **Features**: Batch generation, PDF creation, email automation, value refresh
 - **Auto-closure**: 10 days after creation
 - **Tracking**: Real-time status in `POTracking` sheet
+- **Value Management**: `refreshPOValues()` updates amounts after modifications
 
 ### 3. Goods Receipt (GRN) Processing
 - **Auto-approval**: 60 minutes after creation (hourly trigger)
@@ -285,6 +286,7 @@ This pattern prevents users from receiving multiple "Spreadsheet shared with you
 
 ### Common Operations
 - **Create PO**: Use `createPurchaseOrder()` in `poService.js`
+- **Refresh PO Values**: Use `refreshPOValues()` in `poService.js` 
 - **Process GRN**: Use `createGRN()` in `grnService.js`
 - **Send Emails**: Use templates from `constants.js`
 - **Update Status**: Follow patterns in existing services
@@ -360,7 +362,31 @@ if (hasNewItems || coValue >= ₹10,000) {
 - Includes outlet-specific CC rules
 - Same email quality as PO notifications
 
+## PO Value Management
+
+### Refresh PO Values Feature
+**Purpose**: Updates PO amounts in tracking sheet after authorizers modify quantities in archive sheets.
+
+**Function**: `refreshPOValues()` in `poService.js`
+- **Scope**: Only processes POs where `Approved = false` AND `EmailSent = false`
+- **Process**: Reads L1 formula result from archive sheets and updates POAmount in POTracking
+- **Access**: Super Users via menu "📦 Purchase Orders → 🔄 Refresh PO Values"
+
+**Workflow Integration**:
+1. Generate POs → Initial amounts calculated
+2. Authorizers modify archive sheets → L1 values change
+3. **Run Refresh PO Values** → POTracking amounts updated
+4. Review updated amounts and check approval boxes
+5. Send approved POs → Email delivery
+
+**Error Handling**:
+- Validates required columns exist
+- Handles missing archive files gracefully  
+- Reports update count and errors to user
+- Logs detailed error messages for troubleshooting
+
 ## Recent Enhancements
+- **PO Value Refresh**: New functionality to update amounts after modifications
 - **Threshold-based auto-approval**: Orders under ₹10K auto-process
 - **Professional PDF generation**: Same quality as PO documents
 - **Cost price integration**: Accurate value calculation and tracking
@@ -385,10 +411,15 @@ if (hasNewItems || coValue >= ₹10,000) {
 - **Symptoms**: Similar "Cannot read properties of undefined" errors when processing brand names
 - **Solution**: Always validate brand parameters before string operations and use defensive programming
 
+#### PO Value Discrepancies
+- **Problem**: POAmount in tracking sheet doesn't reflect modifications made to archive sheets
+- **Solution**: Use "🔄 Refresh PO Values" menu before approving POs
+
 ### Prevention
 - When reading outlet/brand data from sheets, apply normalization consistently
 - Add parameter validation to functions that process outlet/brand names
 - Use defensive programming with null/undefined checks before calling string methods
+- Use Refresh PO Values before approval to ensure accurate amounts
 
 ## Support & Maintenance
 - Super users handle system administration

@@ -313,6 +313,108 @@ function sendApprovedPOs() {
 
 
 /**
+ * Refreshes PO values for unapproved and unsent POs by reading from archive sheets.
+ * Only updates POs where Approved = false AND EmailSent = false.
+ */
+function refreshPOValues() {
+  const ss = SpreadsheetApp.openById(MAIN_SS_ID);
+  const trackingSheet = ss.getSheetByName('POTracking');
+  if (!trackingSheet) {
+    SpreadsheetApp.getUi().alert('POTracking sheet not found!');
+    return;
+  }
+
+  const data = trackingSheet.getDataRange().getValues();
+  const headers = data[0];
+  const headerMap = headers.reduce((m, h, i) => (m[h] = i, m), {});
+  
+  const requiredColumns = ['Approved', 'EmailSent', 'PONumber', 'POAmount', 'Link'];
+  for (const col of requiredColumns) {
+    if (headerMap[col] === undefined) {
+      SpreadsheetApp.getUi().alert(`Required column '${col}' not found in POTracking!`);
+      return;
+    }
+  }
+
+  let updatedCount = 0;
+  let errorCount = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const isApproved = row[headerMap.Approved] === true;
+    const emailSent = row[headerMap.EmailSent] === true;
+    const poNumber = row[headerMap.PONumber];
+    const linkUrl = row[headerMap.Link];
+
+    // Only process unapproved and unsent POs
+    if (isApproved || emailSent || !poNumber || !linkUrl) {
+      continue;
+    }
+
+    try {
+      // Extract file ID and sheet name from the link URL
+      const fileIdMatch = linkUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      const sheetIdMatch = linkUrl.match(/#gid=(\d+)/);
+      
+      if (!fileIdMatch) {
+        errorCount++;
+        debugLog(`PO ${poNumber}: Could not extract file ID from link`);
+        continue;
+      }
+
+      const fileId = fileIdMatch[1];
+      const archiveFile = SpreadsheetApp.openById(fileId);
+      
+      let targetSheet;
+      if (sheetIdMatch) {
+        const sheetId = parseInt(sheetIdMatch[1]);
+        targetSheet = archiveFile.getSheets().find(sheet => sheet.getSheetId() === sheetId);
+      }
+      
+      if (!targetSheet) {
+        // Fallback: find sheet by PO number in name
+        targetSheet = archiveFile.getSheets().find(sheet => 
+          sheet.getName().includes(poNumber.toString())
+        );
+      }
+
+      if (!targetSheet) {
+        errorCount++;
+        debugLog(`PO ${poNumber}: Could not find archive sheet`);
+        continue;
+      }
+
+      // Read the L1 value (SUMPRODUCT formula result)
+      const l1Value = targetSheet.getRange("L1").getValue();
+      if (typeof l1Value === 'number' && l1Value > 0) {
+        // Update the POAmount in tracking sheet
+        trackingSheet.getRange(i + 1, headerMap.POAmount + 1)
+          .setValue(l1Value)
+          .setNumberFormat('"₹"#,##,##0.00');
+        updatedCount++;
+        debugLog(`PO ${poNumber}: Updated amount to ₹${l1Value.toFixed(2)}`);
+      } else {
+        errorCount++;
+        debugLog(`PO ${poNumber}: Invalid L1 value: ${l1Value}`);
+      }
+
+    } catch (error) {
+      errorCount++;
+      debugLog(`PO ${poNumber}: Error refreshing value - ${error.message}`);
+    }
+  }
+
+  const message = `PO Values Refresh Complete!\n\nUpdated: ${updatedCount} POs\nErrors: ${errorCount} POs`;
+  if (errorCount === 0) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Refresh Complete', 5);
+  } else {
+    SpreadsheetApp.getUi().alert('Refresh Results', message);
+  }
+  
+  debugLog(`PO Values Refresh: Updated ${updatedCount}, Errors ${errorCount}`);
+}
+
+/**
  * Run manually (menu, button, or time-based trigger) to create POs
  * for every row in POBatch that is not yet marked DONE.
  */

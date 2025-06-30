@@ -206,10 +206,11 @@
       <ol>
         <li>Use <strong>📦 Purchase Orders → 🚀 Generate Multiple POs</strong> or let Purchase Manager handle</li>
         <li>Review generated POs in POTracking sheet</li>
+        <li><strong>After PO modifications:</strong> Use <strong>📦 Purchase Orders → 🔄 Refresh PO Values</strong> to update amounts</li>
         <li><strong>Approve POs:</strong> Check "Approved" checkbox and change Status to "Approved"</li>
       </ol>
       <div class="warning">
-        <strong>Important:</strong> Always verify distributor information and amounts before approval.
+        <strong>Important:</strong> Always verify distributor information and amounts before approval. Use Refresh PO Values to see updated amounts after authorizers modify PO quantities.
       </div>
     </div>
 
@@ -398,6 +399,14 @@
       2. Verify email quotas not exceeded
       3. Review OUTLET_EMAIL_RULES in constants.js
       4. Test with manual send
+    </div>
+
+    <h3>"PO amounts don't match after modifications"</h3>
+    <div class="code-block">
+      1. Use 📦 Purchase Orders → 🔄 Refresh PO Values
+      2. Function only updates unapproved/unsent POs
+      3. Check archive sheet L1 formula is working
+      4. Verify Link column has correct archive URL
     </div>
 
     <h3>"No eligible POs for GRN"</h3>

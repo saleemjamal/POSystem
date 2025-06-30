@@ -38,6 +38,7 @@ function createSuperUserMenu(ui) {
     .addSubMenu(ui.createMenu('📦 Purchase Orders')
       .addItem('🚀 Generate Multiple POs', 'generatePOsFromBatch')
       .addItem('➕ Create Single PO', 'showCreatePODialog')
+      .addItem('🔄 Refresh PO Values', 'refreshPOValues')
       .addItem('📧 Send Approved POs', 'sendApprovedPOs'))
     .addSeparator()
     .addSubMenu(ui.createMenu('👥 Customer Orders')
