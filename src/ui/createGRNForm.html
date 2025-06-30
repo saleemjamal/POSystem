@@ -115,10 +115,16 @@
       <div id="success" class="success" style="display: none;"></div>
       
       <div class="form-group">
+        <label for="orderSearch">Search Orders:</label>
+        <input type="text" id="orderSearch" placeholder="Search by order number, outlet, or brand..." oninput="filterOrders()">
+      </div>
+      
+      <div class="form-group">
         <label for="poNumber">Order Number: <span class="required">*</span></label>
         <select id="poNumber" onchange="onOrderChange()">
           <option value="">Select an order...</option>
         </select>
+        <div class="order-count" id="orderCount" style="font-size: 12px; color: #666; margin-top: 5px;"></div>
       </div>
       
       <div id="poInfo" class="po-info" style="display: none;"></div>
@@ -153,6 +159,7 @@
 
   <script>
     let eligibleOrders = [];
+    let filteredOrders = [];
     
     // Load data when page loads
     window.onload = function() {
@@ -167,22 +174,72 @@
     
     function onEligibleOrdersLoaded(orders) {
       eligibleOrders = orders;
+      filteredOrders = orders; // Initially show all orders
       
-      // Populate order dropdown
+      populateOrderDropdown();
+      updateOrderCount();
+      
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('form').style.display = 'block';
+    }
+    
+    function populateOrderDropdown() {
       const orderSelect = document.getElementById('poNumber');
-      orders.forEach(order => {
+      const currentValue = orderSelect.value; // Preserve selection if any
+      
+      // Clear existing options except the first one
+      orderSelect.innerHTML = '<option value="">Select an order...</option>';
+      
+      // Add filtered orders
+      filteredOrders.forEach(order => {
         const option = document.createElement('option');
         option.value = order.orderNumber;
         option.textContent = order.displayText;
         orderSelect.appendChild(option);
       });
       
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('form').style.display = 'block';
+      // Restore selection if it still exists in filtered results
+      if (currentValue && filteredOrders.some(o => o.orderNumber === currentValue)) {
+        orderSelect.value = currentValue;
+      }
     }
     
     function onError(error) {
       document.getElementById('loading').innerHTML = '<div class="error">Error loading data: ' + error.message + '</div>';
+    }
+    
+    function filterOrders() {
+      const searchTerm = document.getElementById('orderSearch').value.toLowerCase().trim();
+      
+      if (!searchTerm) {
+        // Show all orders if search is empty
+        filteredOrders = eligibleOrders;
+      } else {
+        // Filter orders based on search term
+        filteredOrders = eligibleOrders.filter(order => {
+          return (
+            order.orderNumber.toLowerCase().includes(searchTerm) ||
+            order.outlet.toLowerCase().includes(searchTerm) ||
+            order.brand.toLowerCase().includes(searchTerm) ||
+            order.displayText.toLowerCase().includes(searchTerm)
+          );
+        });
+      }
+      
+      populateOrderDropdown();
+      updateOrderCount();
+    }
+    
+    function updateOrderCount() {
+      const countElement = document.getElementById('orderCount');
+      const total = eligibleOrders.length;
+      const filtered = filteredOrders.length;
+      
+      if (total === filtered) {
+        countElement.textContent = `${total} orders available`;
+      } else {
+        countElement.textContent = `${filtered} of ${total} orders (filtered)`;
+      }
     }
     
     function onOrderChange() {
