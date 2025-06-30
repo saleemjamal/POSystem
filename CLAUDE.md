@@ -225,6 +225,56 @@ if (emailResult === "SUCCESS") {
 
 This pattern ensures that the Sent checkbox accurately reflects email delivery status and prevents data inconsistencies.
 
+### File Permission Management Pattern
+**CRITICAL: Avoid Duplicate Google Drive Notifications**
+
+When granting access to Google Drive files (especially archive files), always check existing permissions before adding users to prevent duplicate sharing email notifications.
+
+**Permission States:**
+- **Current permissions**: Check existing editors/viewers before making changes
+- **Required permissions**: Only grant access to users who don't already have it
+- **Never remove/re-add**: Avoid removing and re-adding existing users
+
+**Implementation Pattern:**
+
+```javascript
+// ❌ BAD - Removes and re-adds existing users (triggers duplicate emails)
+function grantAccess(file) {
+  // Remove all existing editors
+  file.getEditors().forEach(user => file.removeEditor(user));
+  
+  // Re-add required users (sends notifications to existing users!)
+  requiredUsers.forEach(email => file.addEditor(email));
+}
+
+// ✅ GOOD - Check permissions before granting access
+function grantAccess(file) {
+  const currentEditors = file.getEditors().map(u => u.getEmail().toLowerCase());
+  const requiredUsers = ['user1@domain.com', 'user2@domain.com'];
+  
+  // Only add users who don't already have access
+  requiredUsers.forEach(email => {
+    if (!currentEditors.includes(email.toLowerCase())) {
+      file.addEditor(email); // Only new users get notifications
+    }
+  });
+}
+```
+
+**Business Logic Examples:**
+- **New archive files**: Grant access to all required users (notifications expected)
+- **Existing archive files**: Only add missing users (minimal notifications)
+- **Permission updates**: Check current state before making changes
+- **Role changes**: Remove/add only when permissions actually need to change
+
+**Error Prevention:**
+- Always normalize email addresses to lowercase for comparison
+- Handle permission errors gracefully (user might be owner, etc.)
+- Log permission changes for debugging
+- Use descriptive debug messages for troubleshooting
+
+This pattern prevents users from receiving multiple "Spreadsheet shared with you" emails for files they already have access to.
+
 ### Adding New Features
 1. Update role permissions in `userRoles.js`
 2. Add sheet protection rules if needed
