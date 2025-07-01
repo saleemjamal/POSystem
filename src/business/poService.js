@@ -408,7 +408,7 @@ function refreshPOValues() {
   if (errorCount === 0) {
     SpreadsheetApp.getActiveSpreadsheet().toast(message, 'Refresh Complete', 5);
   } else {
-    SpreadsheetApp.getUi().alert('Refresh Results', message);
+    SpreadsheetApp.getUi().alert(message);
   }
   
   debugLog(`PO Values Refresh: Updated ${updatedCount}, Errors ${errorCount}`);
