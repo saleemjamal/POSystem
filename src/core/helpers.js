@@ -51,9 +51,6 @@ function grantEditAccessIfNotExists(fileId, userEmails) {
       }
     });
     
-    // Apply role-based access control for archive files
-    applyArchiveFileAccess(fileId);
-    
   } catch (err) {
     debugLog(`In grantEditAccessIfNotExists error:${err.message}`);
   }

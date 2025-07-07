@@ -111,15 +111,17 @@ function addOrderSheetToDailyArchive(sheetName, orderData, docNumber, orderType 
   const folders = file.getParents();
   const parentFolder = folders.hasNext() ? folders.next() : null;
   if (!parentFolder) throw new Error("No parent folder for main SS!");
-  const archiveFile = getOrCreateTodayOrderArchive(parentFolder);
-  grantEditAccessIfNotExists(archiveFile.getId(), editors);
-  const newSheet = createOrReplacePOSheet(archiveFile.getId(), sheetName);
+  const archiveResult = getOrCreateTodayOrderArchive(parentFolder);
+  if (archiveResult.isNewFile) {
+    applyArchiveFileAccess(archiveResult.file.getId());
+  }
+  const newSheet = createOrReplacePOSheet(archiveResult.file.getId(), sheetName);
   newSheet.appendRow(headerRow);
   orderData.forEach(r => {
     newSheet.appendRow([r[0], r[1], orderType, ...r.slice(2)]);
   });
   newSheet.getRange("L1").setFormula("=SUMPRODUCT(I2:I,J2:J)").setNumberFormat('"₹"#,##,##0.00');
-  return { sheet: newSheet, archiveFileId: archiveFile.getId() };
+  return { sheet: newSheet, archiveFileId: archiveResult.file.getId() };
 }
 
 /**
@@ -229,13 +231,13 @@ function getOrCreateTodayOrderArchive(parentFolder) {
     const baseName = "POs-" + today;
     const files = monthFolder.getFilesByName(baseName);
     if (files.hasNext()) {
-      return SpreadsheetApp.openById(files.next().getId());
+      return { file: SpreadsheetApp.openById(files.next().getId()), isNewFile: false };
     } else {
       const newFile = SpreadsheetApp.create(baseName);
       const newDriveFile = DriveApp.getFileById(newFile.getId());
       monthFolder.addFile(newDriveFile);
       DriveApp.getRootFolder().removeFile(newDriveFile);
-      return SpreadsheetApp.openById(newFile.getId());
+      return { file: SpreadsheetApp.openById(newFile.getId()), isNewFile: true };
     }
   } catch (err) {
     debugLog(`In getOrCreateTodayOrderArchive error:${err.message}`);
@@ -424,14 +426,30 @@ function generatePOsFromBatch() {
   const batchSheet = ss.getSheetByName('POBatch');
   if (!batchSheet) throw new Error('POBatch sheet not found');
 
+  // Clear stop flag at start
+  const prop = PropertiesService.getDocumentProperties();
+  prop.setProperty('STOP_BATCH_PROCESSING', 'false');
+
   const data = batchSheet.getDataRange().getValues();
   const hdr = data[0];
   const colOutlet = hdr.indexOf('Outlet');
   const colBrand = hdr.indexOf('Brand');
   const colPO = hdr.indexOf('PONumber');
   const colStatus = hdr.indexOf('Status');
+  const colPODate = hdr.indexOf('PODate');
+
+  let processedCount = 0;
+  let stoppedByUser = false;
 
   for (let r = 1; r < data.length; r++) {
+
+      // Check stop flag at the beginning of each iteration
+      const stopFlag = prop.getProperty('STOP_BATCH_PROCESSING');
+      if (stopFlag === 'true') {
+        stoppedByUser = true;
+        prop.setProperty('STOP_BATCH_PROCESSING', 'false'); // Clear flag
+        break;
+      }
 
       const status = (colStatus === -1) ? '' : data[r][colStatus];
       if (String(status).trim().toUpperCase() === 'DONE') continue;   // skip
@@ -454,10 +472,23 @@ function generatePOsFromBatch() {
       //if (colStatus === -1) { batchSheet.getRange(1, hdr.length + 1).setValue('Status'); }  // add header once
       batchSheet.getRange(r + 1, (colStatus === -1 ? hdr.length : colStatus) + 1).setValue('DONE');
       batchSheet.getRange(r + 1, (colStatus === -1 ? hdr.length : colPO) + 1).setValue(poNumber);
+      
+      // Add PODate in dd/mm/yyyy format
+      if (colPODate !== -1) {
+        const currentDate = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd/MM/yyyy');
+        batchSheet.getRange(r + 1, colPODate + 1).setValue(currentDate);
+      }
+      
+      processedCount++;
       SpreadsheetApp.flush();   // optional: writeback each loop
   }
 
-  SpreadsheetApp.getUi().alert('Bulk PO generation finished 🎉');
+  // Show appropriate completion message
+  if (stoppedByUser) {
+    SpreadsheetApp.getUi().alert(`Batch processing stopped by user. Processed ${processedCount} POs.`);
+  } else {
+    SpreadsheetApp.getUi().alert(`Bulk PO generation finished 🎉 Processed ${processedCount} POs.`);
+  }
 }
 
 

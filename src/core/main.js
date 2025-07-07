@@ -37,6 +37,7 @@ function createSuperUserMenu(ui) {
     .addSeparator()
     .addSubMenu(ui.createMenu('📦 Purchase Orders')
       .addItem('🚀 Generate Multiple POs', 'generatePOsFromBatch')
+      .addItem('🛑 Stop Batch Processing', 'stopBatchProcessing')
       .addItem('➕ Create Single PO', 'showCreatePODialog')
       .addItem('🔄 Refresh PO Values', 'refreshPOValues')
       .addItem('📧 Send Approved POs', 'sendApprovedPOs'))
@@ -112,6 +113,17 @@ function createNoAccessMenu(ui) {
 function secureGeneratePOsFromBatch() {
   if (validateUserPermission('CREATE_PO')) {
     generatePOsFromBatch();
+  }
+}
+
+/**
+ * Stop batch processing function
+ */
+function stopBatchProcessing() {
+  if (validateUserPermission('CREATE_PO')) {
+    const prop = PropertiesService.getDocumentProperties();
+    prop.setProperty('STOP_BATCH_PROCESSING', 'true');
+    SpreadsheetApp.getUi().alert('Stop Signal Sent', 'Batch processing will stop after completing the current PO.', SpreadsheetApp.getUi().ButtonSet.OK);
   }
 }
 

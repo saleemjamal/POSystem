@@ -82,7 +82,7 @@ const PO_EMAIL_TEMPLATE = (distributor, brand, outlet) => `
               <td style="padding: 8px 18px;">${outlet}</td>
             </tr>
           </table>
-          <p style="margin-bottom: 16px;">You will find the PO attached as a PDF for your records.</p>
+          <p style="margin-bottom: 16px;">You will find the PO attached as a PDF for your records. If you have a regular PO pending from last week or earlier, please considered that Cancelled. This new PO is the only one applicable</p>
         </td>
       </tr>
       <tr>
