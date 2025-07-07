@@ -207,7 +207,32 @@ function classifySKUs() {
             }
              const CurrentStock = s.stock || 0;
             // Calculate recommended order qty (never negative)
-            const FinalOrderQty = Math.max(SuggestedQty - CurrentStock, 0);
+            let FinalOrderQty = Math.max(SuggestedQty - CurrentStock, 0);
+            
+            // Apply business rules to override standard calculation
+            try {
+                const vendor = lookupDistributor(s.brand, s.outlet) || 'Unknown Vendor';
+                const businessRuleResult = applyBusinessRules(
+                    sku, 
+                    vendor, 
+                    s.brand, 
+                    s.itemName, 
+                    s.outlet, 
+                    CurrentStock, 
+                    FinalOrderQty
+                );
+                
+                // Update quantity and justification if business rule applied
+                if (businessRuleResult.justification) {
+                    // Business rule matched - use overridden quantity and justification
+                    FinalOrderQty = businessRuleResult.quantity;
+                    Justification = businessRuleResult.justification;
+                }
+                // If no business rule applied (justification is null), keep original values unchanged
+            } catch (error) {
+                debugLog(`Error applying business rules for SKU ${sku}: ${error.message}`);
+                // Continue with standard calculation on error
+            }
 
             output.push([
                 s.outlet, s.brand, sku, s.itemName,
