@@ -161,7 +161,11 @@ function createMainRulesSheet(ss) {
   // Freeze header and add formatting
   sheet.setFrozenRows(1);
   sheet.getRange(1, 1, 50, headers.length).setBorder(true, true, true, true, true, true);
-  sheet.getRange(2, 1, 48, headers.length).setBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY);
+  
+  // Add alternating row colors manually (compatible with all GAS versions)
+  for (let i = 2; i <= 49; i += 2) {
+    sheet.getRange(i, 1, 1, headers.length).setBackground('#f3f3f3');
+  }
 }
 
 /**
